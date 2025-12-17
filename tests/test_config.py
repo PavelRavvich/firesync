@@ -84,8 +84,9 @@ class TestFiresyncConfig(unittest.TestCase):
         self.assertEqual(config.env, Environment.DEV)
         self.assertEqual(config.project_id, "test-project-123")
         self.assertEqual(config.service_account, "test@test-project-123.iam.gserviceaccount.com")
-        self.assertTrue(str(config.key_path).endswith("secrets/gcp-key-dev.json"))
-        self.assertTrue(str(config.schema_dir).endswith("firestore_schema"))
+        # Use Path for cross-platform compatibility
+        self.assertTrue(config.key_path.match("*/secrets/gcp-key-dev.json"))
+        self.assertTrue(config.schema_dir.match("*/firestore_schema"))
 
     @patch("pathlib.Path.read_text")
     @patch("pathlib.Path.exists")
@@ -97,7 +98,8 @@ class TestFiresyncConfig(unittest.TestCase):
         config = FiresyncConfig.from_args(env="staging", schema_dir="custom_schema")
 
         self.assertEqual(config.env, Environment.STAGING)
-        self.assertTrue(str(config.schema_dir).endswith("custom_schema"))
+        # Use Path for cross-platform compatibility
+        self.assertTrue(config.schema_dir.match("*/custom_schema"))
 
     @patch("pathlib.Path.read_text")
     @patch("pathlib.Path.exists")
