@@ -1,7 +1,7 @@
 # FireSync
 
-[![Tests](https://github.com/PavelRavvich/firesync/actions/workflows/test.yml/badge.svg)](https://github.com/PavelRavvich/firesync/actions/workflows/test.yml)
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://github.com/PavelRavvich/firesync/actions/workflows/pipeline.yml/badge.svg)](https://github.com/PavelRavvich/firesync/actions/workflows/pipeline.yml)
+[![Python 3.8-3.14](https://img.shields.io/badge/python-3.8--3.14-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/PavelRavvich/firesync)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -54,7 +54,7 @@ FireSync is a lightweight Python tool that brings version control and deployment
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.8+
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (gcloud CLI)
 - GCP service account with Firestore permissions
 

@@ -37,7 +37,7 @@ Thank you for your interest in contributing to FireSync! This document provides 
 
 ### Prerequisites
 
-- Python 3.7 or higher
+- Python 3.8 or higher
 - Google Cloud SDK (gcloud CLI)
 - GCP service account with Firestore permissions for testing
 
