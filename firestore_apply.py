@@ -1,147 +1,154 @@
 #!/usr/bin/env python3
-import argparse, json, os, pathlib, platform, subprocess, sys
+"""Apply local Firestore schema to remote GCP project."""
 
-GCLOUD = "gcloud.cmd" if platform.system() == "Windows" else "gcloud"
+import logging
+from typing import Callable, List, Dict, Any
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--env", choices=["dev", "staging", "production"], help="Target environment")
-parser.add_argument("--schema-dir", default="firestore_schema", help="Directory with schema JSON files")
-args = parser.parse_args()
+from core.cli import parse_common_args, setup_client
+from core.gcloud import GCloudClient
+from core.operations import (
+    CompositeIndexOperations,
+    FieldIndexOperations,
+    TTLPolicyOperations,
+)
+from core.schema import SchemaFile, load_schema_file
 
-env = args.env or os.getenv("ENV")
-if not env:
-    print("[!] Please provide --env flag or set ENV environment variable.")
-    sys.exit(1)
-
-key_path = pathlib.Path(f"secrets/gcp-key-{env}.json")
-if not key_path.exists():
-    print(f"[!] Key file not found: {key_path}")
-    sys.exit(1)
-
-try:
-    key_data = json.loads(key_path.read_text(encoding="utf-8"))
-    project_id = key_data["project_id"]
-    service_account = key_data["client_email"]
-except Exception as e:
-    print(f"[!] Failed to parse key file: {e}")
-    sys.exit(1)
-
-print(f"[~] Environment: {env}")
-print(f"[~] Project: {project_id}")
-
-subprocess.run([
-    GCLOUD, "auth", "activate-service-account", service_account,
-    f"--key-file={key_path}", f"--project={project_id}"
-], check=True)
-
-SCHEMA_DIR = (pathlib.Path(__file__).parent / args.schema_dir).resolve()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
-def run_gcloud(cmd_list):
-    full_cmd = [GCLOUD] + cmd_list + ["--quiet", "--project", project_id]
-    print(f"[~] {' '.join(full_cmd)}")
-    result = subprocess.run(full_cmd, capture_output=True, text=True)
-    stderr = result.stderr.strip().lower()
-    if result.returncode != 0:
-        if "already exists" in stderr or "already_exists" in stderr:
-            print(f"[~] Skipped (already exists): {stderr}")
-        elif "permission denied" in stderr or "permission" in stderr:
-            print(f"[!] Permission denied: {stderr}")
-        else:
-            print(f"[!] Failed: {stderr}")
-    else:
-        print("[+] Success")
+def apply_resources(
+    client: GCloudClient,
+    resources: List[Dict[str, Any]],
+    build_command: Callable[[Dict[str, Any]], List[str]],
+    resource_type: str
+) -> int:
+    """
+    Apply resources to Firestore with error handling.
+
+    Args:
+        client: GCloud client
+        resources: List of resource definitions
+        build_command: Function to build gcloud command from resource
+        resource_type: Resource type name for logging
+
+    Returns:
+        Number of successfully applied resources
+    """
+    success_count = 0
+    for resource in resources:
+        try:
+            cmd = build_command(resource)
+            if client.run_command_tolerant(cmd):
+                success_count += 1
+        except (ValueError, Exception) as e:
+            print(f"[!] Skipping invalid {resource_type}: {e}")
+            logger.warning(f"Invalid {resource_type}: {e}")
+    return success_count
 
 
-print("\n🔹 Applying Composite Indexes")
-try:
-    path = SCHEMA_DIR / "composite-indexes.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, list):
-        raise ValueError("Expected a list in composite-indexes.json")
+def main():
+    """Main entry point for firestore_apply command."""
+    args = parse_common_args(
+        "Apply local Firestore schema to remote GCP project",
+        include_schema_dir=True
+    )
+    config, client = setup_client(env=args.env, schema_dir=args.schema_dir)
 
-    for idx in data:
-        coll = idx.get("collectionGroupId") or idx.get("collectionGroup")
-        if not coll and "name" in idx:
-            parts = idx["name"].split("/collectionGroups/")
-            if len(parts) > 1:
-                coll = parts[1].split("/")[0]
+    # Apply Composite Indexes
+    print("\n🔹 Applying Composite Indexes")
+    try:
+        local_composite = load_schema_file(config.schema_dir / SchemaFile.COMPOSITE_INDEXES)
 
-        scope = idx.get("queryScope", "COLLECTION")
-        fields = idx.get("fields", [])
-        if not coll or not fields:
-            print(f"[!] Skipping invalid composite index: {idx}")
-            continue
+        if not isinstance(local_composite, list):
+            raise ValueError("Expected a list in composite-indexes.json")
 
-        cmd = [
-            "firestore", "indexes", "composite", "create",
-            f"--collection-group={coll}",
-            f"--query-scope={scope}"
-        ]
-        for f in fields:
-            if "fieldPath" in f and ("order" in f or "arrayConfig" in f):
-                kv = f"field-path={f['fieldPath']}"
-                if "order" in f:
-                    kv += f",order={f['order'].lower()}"
-                elif "arrayConfig" in f:
-                    kv += f",array-config={f['arrayConfig'].lower()}"
-                cmd.append(f"--field-config={kv}")
-        run_gcloud(cmd)
-except Exception as e:
-    print(f"[!] Error applying composite indexes: {e}")
+        success_count = apply_resources(
+            client,
+            local_composite,
+            CompositeIndexOperations.build_create_command,
+            "composite index"
+        )
+        print(f"[~] Processed {success_count}/{len(local_composite)} composite indexes")
 
-print("\n🔹 Applying Single-Field Indexes")
-try:
-    path = SCHEMA_DIR / "field-indexes.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, list):
-        raise ValueError("Expected a list in field-indexes.json")
+    except FileNotFoundError:
+        print("[!] Local composite-indexes.json not found, skipping")
+    except Exception as e:
+        print(f"[!] Error applying composite indexes: {e}")
+        logger.exception("Failed to apply composite indexes")
 
-    for entry in data:
-        coll = entry.get("collectionGroupId")
-        path_field = entry.get("fieldPath")
-        idx_cfg = entry.get("indexes", [])
-        for cfg in idx_cfg:
-            val = cfg.get("order") or cfg.get("arrayConfig")
-            if not val:
+    # Apply Single-Field Indexes
+    print("\n🔹 Applying Single-Field Indexes")
+    try:
+        local_fields = load_schema_file(config.schema_dir / SchemaFile.FIELD_INDEXES)
+
+        if not isinstance(local_fields, list):
+            raise ValueError("Expected a list in field-indexes.json")
+
+        success_count = 0
+        total_count = 0
+
+        for entry in local_fields:
+            collection = entry.get("collectionGroupId")
+            field_path = entry.get("fieldPath")
+            idx_configs = entry.get("indexes", [])
+
+            if not collection or not field_path:
+                print(f"[!] Skipping invalid field index entry: {entry}")
                 continue
-            prefix = "order=" if "order" in cfg else "array-config="
-            run_gcloud([
-                "firestore", "indexes", "fields", "update",
-                path_field,
-                f"--collection-group={coll}",
-                f"--index={prefix}{val.lower()}"
-            ])
-except Exception as e:
-    print(f"[!] Error applying single-field indexes: {e}")
 
-print("\n🔹 Applying TTL Policies")
-try:
-    path = SCHEMA_DIR / "ttl-policies.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, list):
-        raise ValueError("Expected a list in ttl-policies.json")
+            for cfg in idx_configs:
+                value = cfg.get("order") or cfg.get("arrayConfig")
+                if not value:
+                    continue
 
-    for row in data:
-        coll = row.get("collectionGroupId") or row.get("collectionGroup")
-        if not coll and "name" in row:
-            parts = row["name"].split("/collectionGroups/")
-            if len(parts) > 1:
-                coll = parts[1].split("/")[0]
+                total_count += 1
+                try:
+                    cmd = FieldIndexOperations.build_create_command(
+                        collection, field_path, value.lower()
+                    )
+                    if client.run_command_tolerant(cmd):
+                        success_count += 1
+                except Exception as e:
+                    print(f"[!] Failed to create field index: {e}")
+                    logger.warning(f"Failed to create field index: {e}")
 
-        field = row.get("field") or row.get("name").split("/fields/")[-1]
-        ttl_state = row.get("ttlConfig", {}).get("state")
-        if not (coll and field and ttl_state):
-            continue
+        print(f"[~] Processed {success_count}/{total_count} field indexes")
 
-        cmd = [
-            "firestore", "fields", "ttls", "update",
-            field,
-            f"--collection-group={coll}",
-            "--enable-ttl" if ttl_state.upper() == "ACTIVE" else "--disable-ttl"
-        ]
-        run_gcloud(cmd)
-except Exception as e:
-    print(f"[!] Error applying TTL: {e}")
+    except FileNotFoundError:
+        print("[!] Local field-indexes.json not found, skipping")
+    except Exception as e:
+        print(f"[!] Error applying single-field indexes: {e}")
+        logger.exception("Failed to apply field indexes")
 
-print("\n✔️ Firestore schema applied.")
+    # Apply TTL Policies
+    print("\n🔹 Applying TTL Policies")
+    try:
+        local_ttl = load_schema_file(config.schema_dir / SchemaFile.TTL_POLICIES)
+
+        if not isinstance(local_ttl, list):
+            raise ValueError("Expected a list in ttl-policies.json")
+
+        success_count = apply_resources(
+            client,
+            local_ttl,
+            TTLPolicyOperations.build_create_command,
+            "TTL policy"
+        )
+        print(f"[~] Processed {success_count}/{len(local_ttl)} TTL policies")
+
+    except FileNotFoundError:
+        print("[!] Local ttl-policies.json not found, skipping")
+    except Exception as e:
+        print(f"[!] Error applying TTL: {e}")
+        logger.exception("Failed to apply TTL policies")
+
+    print("\n✔️ Firestore schema applied.")
+
+
+if __name__ == "__main__":
+    main()
