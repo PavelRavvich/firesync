@@ -32,3 +32,12 @@ secrets/*
 # Firestore schema (optional - uncomment if you want to version control schema)
 # firestore_schema/*
 # !firestore_schema/.gitkeep
+
+# Testing and coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+*.cover
