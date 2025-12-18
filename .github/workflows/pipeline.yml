@@ -108,8 +108,8 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: ${{ github.event.repository.default_branch }}
-        head: HEAD
+        base: ${{ github.event.before && github.event.before != '0000000000000000000000000000000000000000' && github.event.before || 'HEAD~1' }}
+        head: ${{ github.sha }}
         extra_args: --only-verified --fail
 
   codeql:
