@@ -25,16 +25,19 @@ def create_parser():
     # Pull command
     pull_parser = subparsers.add_parser('pull', help='Export Firestore schema to local files')
     pull_parser.add_argument('--env', choices=['dev', 'staging', 'production'], help='Target environment')
+    pull_parser.add_argument('--key-path', help='Path to GCP service account key file')
 
     # Plan command
     plan_parser = subparsers.add_parser('plan', help='Compare local vs remote schema')
     plan_parser.add_argument('--env', choices=['dev', 'staging', 'production'], help='Target environment')
     plan_parser.add_argument('--schema-dir', default='firestore_schema', help='Schema directory')
+    plan_parser.add_argument('--key-path', help='Path to GCP service account key file')
 
     # Apply command
     apply_parser = subparsers.add_parser('apply', help='Apply local schema to Firestore')
     apply_parser.add_argument('--env', choices=['dev', 'staging', 'production'], help='Target environment')
     apply_parser.add_argument('--schema-dir', default='firestore_schema', help='Schema directory')
+    apply_parser.add_argument('--key-path', help='Path to GCP service account key file')
 
     return parser
 
@@ -59,6 +62,8 @@ def main():
         cmd.append(str(script_dir / 'firestore_pull.py'))
         if args.env:
             cmd.extend(['--env', args.env])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
 
     elif args.command == 'plan':
         cmd.append(str(script_dir / 'firestore_plan.py'))
@@ -66,6 +71,8 @@ def main():
             cmd.extend(['--env', args.env])
         if args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
 
     elif args.command == 'apply':
         cmd.append(str(script_dir / 'firestore_apply.py'))
@@ -73,6 +80,8 @@ def main():
             cmd.extend(['--env', args.env])
         if args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
 
     # Execute the command
     result = subprocess.run(cmd)

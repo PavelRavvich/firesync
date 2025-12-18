@@ -24,6 +24,10 @@ def parse_common_args(description: str, include_schema_dir: bool = False) -> arg
         choices=["dev", "staging", "production"],
         help="Target environment"
     )
+    parser.add_argument(
+        "--key-path",
+        help="Path to GCP service account key file"
+    )
 
     if include_schema_dir:
         parser.add_argument(
@@ -37,7 +41,8 @@ def parse_common_args(description: str, include_schema_dir: bool = False) -> arg
 
 def setup_client(
     env: Optional[str] = None,
-    schema_dir: str = "firestore_schema"
+    schema_dir: str = "firestore_schema",
+    key_path: Optional[str] = None
 ) -> Tuple[FiresyncConfig, GCloudClient]:
     """
     Set up configuration and GCloud client.
@@ -45,11 +50,12 @@ def setup_client(
     Args:
         env: Environment name
         schema_dir: Schema directory path
+        key_path: Optional path to GCP service account key file
 
     Returns:
         Tuple of (config, client)
     """
-    config = FiresyncConfig.from_args(env=env, schema_dir=schema_dir)
+    config = FiresyncConfig.from_args(env=env, schema_dir=schema_dir, key_path=key_path)
     config.display_info()
     client = GCloudClient(config)
     return config, client

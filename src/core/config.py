@@ -38,7 +38,8 @@ class FiresyncConfig:
     def from_args(
         cls,
         env: Optional[str] = None,
-        schema_dir: str = "firestore_schema"
+        schema_dir: str = "firestore_schema",
+        key_path: Optional[str] = None
     ) -> "FiresyncConfig":
         """
         Create configuration from command-line arguments and environment.
@@ -46,6 +47,7 @@ class FiresyncConfig:
         Args:
             env: Environment name (dev, staging, production)
             schema_dir: Directory containing schema JSON files
+            key_path: Optional custom path to GCP service account key file
 
         Returns:
             FiresyncConfig instance
@@ -67,14 +69,20 @@ class FiresyncConfig:
             sys.exit(1)
 
         # Load GCP key file
-        key_path = Path(f"secrets/gcp-key-{environment.value}.json")
-        if not key_path.exists():
-            print(f"[!] Key file not found: {key_path}")
-            print(f"[!] Please ensure the service account key exists at: {key_path.resolve()}")
+        if key_path:
+            # Use custom key path if provided
+            key_file_path = Path(key_path)
+        else:
+            # Use default path based on environment
+            key_file_path = Path(f"secrets/gcp-key-{environment.value}.json")
+
+        if not key_file_path.exists():
+            print(f"[!] Key file not found: {key_file_path}")
+            print(f"[!] Please ensure the service account key exists at: {key_file_path.resolve()}")
             sys.exit(1)
 
         try:
-            key_data = json.loads(key_path.read_text(encoding="utf-8"))
+            key_data = json.loads(key_file_path.read_text(encoding="utf-8"))
             project_id = key_data["project_id"]
             service_account = key_data["client_email"]
         except KeyError as e:
@@ -94,7 +102,7 @@ class FiresyncConfig:
             env=environment,
             project_id=project_id,
             service_account=service_account,
-            key_path=key_path.resolve(),
+            key_path=key_file_path.resolve(),
             schema_dir=schema_path
         )
 

@@ -169,6 +169,23 @@ export ENV=dev
 ./firesync apply --env=dev --schema-dir=custom_schemas
 ```
 
+### Custom Key Path
+
+By default, FireSync looks for service account keys at `secrets/gcp-key-{env}.json`. You can override this with `--key-path`:
+
+```bash
+# Use a key from a different location
+./firesync pull --env=dev --key-path=~/my-keys/project-key.json
+./firesync plan --env=staging --key-path=/etc/gcp/service-account.json
+./firesync apply --env=production --key-path=./custom/admin-key.json
+```
+
+This is useful for:
+- Keys stored in centralized locations
+- CI/CD pipelines with injected credentials
+- Testing with different service accounts
+- Non-standard key naming conventions
+
 ## Schema Files
 
 FireSync manages three types of Firestore configurations:
