@@ -95,7 +95,7 @@ jobs:
         path: htmlcov/
 
   trufflehog:
-    name: TruffleHog Secrets Scan
+    name: TruffleHog
     runs-on: ubuntu-latest
 
     steps:
@@ -113,7 +113,7 @@ jobs:
         extra_args: --only-verified
 
   codeql:
-    name: CodeQL Security Analysis
+    name: CodeQL
     runs-on: ubuntu-latest
     permissions:
       actions: read
