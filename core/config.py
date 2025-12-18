@@ -1,34 +1,15 @@
 """Configuration management for FireSync."""
 
 import json
-import os
 import sys
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from typing import Optional
-
-
-class Environment(Enum):
-    """Supported deployment environments."""
-    DEV = "dev"
-    STAGING = "staging"
-    PRODUCTION = "production"
-
-    @classmethod
-    def from_string(cls, value: str) -> "Environment":
-        """Convert string to Environment enum."""
-        try:
-            return cls(value.lower())
-        except ValueError:
-            raise ValueError(f"Invalid environment: {value}. Must be one of: dev, staging, production")
 
 
 @dataclass
 class FiresyncConfig:
     """Configuration for FireSync operations."""
 
-    env: Environment
     project_id: str
     service_account: str
     key_path: Path
@@ -37,44 +18,24 @@ class FiresyncConfig:
     @classmethod
     def from_args(
         cls,
-        env: Optional[str] = None,
-        schema_dir: str = "firestore_schema",
-        key_path: Optional[str] = None
+        key_path: str,
+        schema_dir: str = "firestore_schema"
     ) -> "FiresyncConfig":
         """
-        Create configuration from command-line arguments and environment.
+        Create configuration from command-line arguments.
 
         Args:
-            env: Environment name (dev, staging, production)
+            key_path: Path to GCP service account key file
             schema_dir: Directory containing schema JSON files
-            key_path: Optional custom path to GCP service account key file
 
         Returns:
             FiresyncConfig instance
 
         Raises:
-            SystemExit: If environment is not specified or key file is invalid
+            SystemExit: If key file is invalid or missing
         """
-        # Get environment from argument or ENV variable
-        env_str = env or os.getenv("ENV")
-        if not env_str:
-            print("[!] Please provide --env flag or set ENV environment variable.")
-            print("[!] Valid values: dev, staging, production")
-            sys.exit(1)
-
-        try:
-            environment = Environment.from_string(env_str)
-        except ValueError as e:
-            print(f"[!] {e}")
-            sys.exit(1)
-
         # Load GCP key file
-        if key_path:
-            # Use custom key path if provided
-            key_file_path = Path(key_path)
-        else:
-            # Use default path based on environment
-            key_file_path = Path(f"secrets/gcp-key-{environment.value}.json")
+        key_file_path = Path(key_path)
 
         if not key_file_path.exists():
             print(f"[!] Key file not found: {key_file_path}")
@@ -99,7 +60,6 @@ class FiresyncConfig:
         schema_path = (Path.cwd() / schema_dir).resolve()
 
         return cls(
-            env=environment,
             project_id=project_id,
             service_account=service_account,
             key_path=key_file_path.resolve(),
@@ -108,6 +68,6 @@ class FiresyncConfig:
 
     def display_info(self) -> None:
         """Print configuration information."""
-        print(f"[~] Environment: {self.env.value}")
         print(f"[~] Project: {self.project_id}")
         print(f"[~] Service Account: {self.service_account}")
+        print(f"[~] Key Path: {self.key_path}")

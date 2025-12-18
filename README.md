@@ -47,9 +47,9 @@ FireSync is a lightweight Python tool that brings version control and deployment
 ## Features
 
 - 🔄 **Version Control** - Track Firestore schema changes in git
-- 🌍 **Multi-Environment** - Separate configs for dev, staging, and production
 - 🔍 **Plan Before Apply** - Preview changes before deploying
 - 🛡️ **Safety First** - Idempotent operations, no accidental deletions
+- 🔑 **Flexible Auth** - Use any GCP service account key
 - 🐍 **Zero Dependencies** - Pure Python stdlib, just needs gcloud CLI
 - 🪟 **Cross-Platform** - Works on Linux, macOS, and Windows
 
@@ -83,15 +83,15 @@ pip3 install -e .
    - `datastore.indexes.update`
    - `firebase.projects.get`
 
-2. Download the service account key and save it:
+2. Download the service account key:
 ```bash
-mkdir -p secrets/
-mv ~/Downloads/your-key.json secrets/gcp-key-dev.json
+# Save your key anywhere you want
+mv ~/Downloads/your-key.json ./gcp-key.json
 ```
 
 3. Pull your current Firestore schema:
 ```bash
-./firesync pull --env=dev
+./firesync pull --key-path=./gcp-key.json
 ```
 
 This creates `firestore_schema/` with your current configuration.
@@ -103,12 +103,12 @@ This creates `firestore_schema/` with your current configuration.
 Export current Firestore configuration to local JSON files:
 
 ```bash
-./firesync pull --env=dev
+./firesync pull --key-path=./gcp-key.json
 ```
 
 Or using the old script directly:
 ```bash
-./firestore_pull.py --env=dev
+./firestore_pull.py --key-path=./gcp-key.json
 ```
 
 ### Plan Changes
@@ -116,12 +116,12 @@ Or using the old script directly:
 Compare local schema against remote Firestore and preview what would change:
 
 ```bash
-./firesync plan --env=staging
+./firesync plan --key-path=./gcp-key.json
 ```
 
 Or using the old script directly:
 ```bash
-./firestore_plan.py --env=staging
+./firestore_plan.py --key-path=./gcp-key.json
 ```
 
 Output example:
@@ -141,50 +141,37 @@ Output example:
 Deploy local schema to Firestore:
 
 ```bash
-./firesync apply --env=staging
+./firesync apply --key-path=./gcp-key.json
 ```
 
 Or using the old script directly:
 ```bash
-./firestore_apply.py --env=staging
+./firestore_apply.py --key-path=./gcp-key.json
 ```
 
 ## Configuration
 
-### Environment Variables
-
-Instead of `--env` flag, you can use the `ENV` environment variable:
-
-```bash
-export ENV=dev
-./firesync pull
-./firesync plan
-./firesync apply
-```
-
 ### Custom Schema Directory
 
 ```bash
-./firesync plan --env=dev --schema-dir=custom_schemas
-./firesync apply --env=dev --schema-dir=custom_schemas
+./firesync plan --key-path=./gcp-key.json --schema-dir=custom_schemas
+./firesync apply --key-path=./gcp-key.json --schema-dir=custom_schemas
 ```
 
-### Custom Key Path
+### Multi-Project Setup
 
-By default, FireSync looks for service account keys at `secrets/gcp-key-{env}.json`. You can override this with `--key-path`:
+Organize keys for different projects:
 
 ```bash
-# Use a key from a different location
-./firesync pull --env=dev --key-path=~/my-keys/project-key.json
-./firesync plan --env=staging --key-path=/etc/gcp/service-account.json
-./firesync apply --env=production --key-path=./custom/admin-key.json
-```
+# Development project
+./firesync pull --key-path=./keys/dev-project.json
 
-This is useful for:
-- Keys stored in centralized locations
-- CI/CD pipelines with injected credentials
-- Testing with different service accounts
-- Non-standard key naming conventions
+# Staging project
+./firesync plan --key-path=./keys/staging-project.json
+
+# Production project
+./firesync apply --key-path=./keys/prod-project.json
+```
 
 ## Schema Files
 
@@ -348,11 +335,7 @@ firesync/
 │   ├── composite-indexes.json
 │   ├── field-indexes.json
 │   └── ttl-policies.json
-├── secrets/                   # GCP service account keys (gitignored)
-│   ├── .gitkeep
-│   ├── gcp-key-dev.json
-│   ├── gcp-key-staging.json
-│   └── gcp-key-production.json
+├── gcp-key.json               # GCP service account key (gitignored)
 ├── pyproject.toml             # Package configuration
 ├── setup.py                   # Backward compatibility
 ├── .gitignore
@@ -391,7 +374,7 @@ Ensure your service account has these IAM roles:
 
 ```bash
 # Pull schema first if firestore_schema/ is empty
-./firesync pull --env=dev
+./firesync pull --key-path=./gcp-key.json
 ```
 
 ## Contributing
