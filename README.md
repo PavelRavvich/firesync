@@ -66,7 +66,13 @@ FireSync is a lightweight Python tool that brings version control and deployment
 ```bash
 git clone https://github.com/yourusername/firesync.git
 cd firesync
-chmod +x firestore_*.py
+chmod +x firesync
+```
+
+Or install as a Python package:
+
+```bash
+pip3 install -e .
 ```
 
 ### Setup
@@ -85,7 +91,7 @@ mv ~/Downloads/your-key.json secrets/gcp-key-dev.json
 
 3. Pull your current Firestore schema:
 ```bash
-./firestore_pull.py --env=dev
+./firesync pull --env=dev
 ```
 
 This creates `firestore_schema/` with your current configuration.
@@ -97,6 +103,11 @@ This creates `firestore_schema/` with your current configuration.
 Export current Firestore configuration to local JSON files:
 
 ```bash
+./firesync pull --env=dev
+```
+
+Or using the old script directly:
+```bash
 ./firestore_pull.py --env=dev
 ```
 
@@ -104,6 +115,11 @@ Export current Firestore configuration to local JSON files:
 
 Compare local schema against remote Firestore and preview what would change:
 
+```bash
+./firesync plan --env=staging
+```
+
+Or using the old script directly:
 ```bash
 ./firestore_plan.py --env=staging
 ```
@@ -125,6 +141,11 @@ Output example:
 Deploy local schema to Firestore:
 
 ```bash
+./firesync apply --env=staging
+```
+
+Or using the old script directly:
+```bash
 ./firestore_apply.py --env=staging
 ```
 
@@ -136,16 +157,16 @@ Instead of `--env` flag, you can use the `ENV` environment variable:
 
 ```bash
 export ENV=dev
-./firestore_pull.py
-./firestore_plan.py
-./firestore_apply.py
+./firesync pull
+./firesync plan
+./firesync apply
 ```
 
 ### Custom Schema Directory
 
 ```bash
-./firestore_plan.py --env=dev --schema-dir=custom_schemas
-./firestore_apply.py --env=dev --schema-dir=custom_schemas
+./firesync plan --env=dev --schema-dir=custom_schemas
+./firesync apply --env=dev --schema-dir=custom_schemas
 ```
 
 ## Schema Files
@@ -292,9 +313,19 @@ Example:
 
 ```
 firesync/
-├── firestore_pull.py          # Export schema from Firestore
-├── firestore_plan.py          # Compare local vs remote
-├── firestore_apply.py         # Apply schema to Firestore
+├── firesync                   # Unified CLI entry point
+├── firestore_pull.py          # Export schema from Firestore (legacy)
+├── firestore_plan.py          # Compare local vs remote (legacy)
+├── firestore_apply.py         # Apply schema to Firestore (legacy)
+├── src/
+│   ├── core/                  # Core Python package
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── gcloud.py
+│   │   ├── normalizers.py
+│   │   ├── operations.py
+│   │   └── schema.py
+│   └── firesync_cli.py        # CLI implementation
 ├── firestore_schema/          # Schema JSON files
 │   ├── .gitkeep
 │   ├── composite-indexes.json
@@ -305,6 +336,8 @@ firesync/
 │   ├── gcp-key-dev.json
 │   ├── gcp-key-staging.json
 │   └── gcp-key-production.json
+├── pyproject.toml             # Package configuration
+├── setup.py                   # Backward compatibility
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -341,7 +374,7 @@ Ensure your service account has these IAM roles:
 
 ```bash
 # Pull schema first if firestore_schema/ is empty
-./firestore_pull.py --env=dev
+./firesync pull --env=dev
 ```
 
 ## Contributing
