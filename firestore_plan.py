@@ -68,7 +68,7 @@ def main():
         "Compare local Firestore schema against remote state",
         include_schema_dir=True
     )
-    config, client = setup_client(key_path=args.key_path, schema_dir=args.schema_dir)
+    config, client = setup_client(key_path=args.key_path, key_env=args.key_env, schema_dir=args.schema_dir)
 
     # Compare Composite Indexes
     compare_and_display(

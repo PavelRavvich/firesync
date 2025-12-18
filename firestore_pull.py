@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def main():
     """Main entry point for firestore_pull command."""
     args = parse_common_args("Export Firestore schema from GCP to local JSON files")
-    config, client = setup_client(key_path=args.key_path)
+    config, client = setup_client(key_path=args.key_path, key_env=args.key_env)
 
     # Ensure schema directory exists
     ensure_schema_dir(config.schema_dir)

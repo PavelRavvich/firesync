@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Tuple
+from typing import Optional, Tuple
 
 from core.config import FiresyncConfig
 from core.gcloud import GCloudClient
@@ -20,10 +20,16 @@ def parse_common_args(description: str, include_schema_dir: bool = False) -> arg
         Parsed arguments namespace
     """
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
+
+    # Key authentication (mutually exclusive)
+    key_group = parser.add_mutually_exclusive_group(required=True)
+    key_group.add_argument(
         "--key-path",
-        required=True,
         help="Path to GCP service account key file"
+    )
+    key_group.add_argument(
+        "--key-env",
+        help="Name of environment variable containing key JSON"
     )
 
     if include_schema_dir:
@@ -37,7 +43,8 @@ def parse_common_args(description: str, include_schema_dir: bool = False) -> arg
 
 
 def setup_client(
-    key_path: str,
+    key_path: Optional[str] = None,
+    key_env: Optional[str] = None,
     schema_dir: str = "firestore_schema"
 ) -> Tuple[FiresyncConfig, GCloudClient]:
     """
@@ -45,12 +52,13 @@ def setup_client(
 
     Args:
         key_path: Path to GCP service account key file
+        key_env: Name of environment variable with key JSON
         schema_dir: Schema directory path
 
     Returns:
         Tuple of (config, client)
     """
-    config = FiresyncConfig.from_args(key_path=key_path, schema_dir=schema_dir)
+    config = FiresyncConfig.from_args(key_path=key_path, key_env=key_env, schema_dir=schema_dir)
     config.display_info()
     client = GCloudClient(config)
     return config, client

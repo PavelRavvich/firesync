@@ -103,7 +103,11 @@ This creates `firestore_schema/` with your current configuration.
 Export current Firestore configuration to local JSON files:
 
 ```bash
+# Using key file
 ./firesync pull --key-path=./gcp-key.json
+
+# Using environment variable
+./firesync pull --key-env=GCP_KEY
 ```
 
 Or using the old script directly:
@@ -171,6 +175,25 @@ Organize keys for different projects:
 
 # Production project
 ./firesync apply --key-path=./keys/prod-project.json
+```
+
+### Using Environment Variables (CI/CD)
+
+For CI/CD pipelines where keys are stored as secrets:
+
+```bash
+# Set key as environment variable
+export GCP_SERVICE_KEY='{"project_id":"...","private_key":"..."}'
+./firesync pull --key-env=GCP_SERVICE_KEY
+
+# Or inline
+GCP_KEY='{"project_id":"..."}' ./firesync plan --key-env=GCP_KEY
+
+# GitHub Actions example
+- name: Deploy to Firestore
+  env:
+    GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+  run: ./firesync apply --key-env=GCP_KEY
 ```
 
 ## Schema Files

@@ -24,16 +24,22 @@ def create_parser():
 
     # Pull command
     pull_parser = subparsers.add_parser('pull', help='Export Firestore schema to local files')
-    pull_parser.add_argument('--key-path', required=True, help='Path to GCP service account key file')
+    pull_key_group = pull_parser.add_mutually_exclusive_group(required=True)
+    pull_key_group.add_argument('--key-path', help='Path to GCP service account key file')
+    pull_key_group.add_argument('--key-env', help='Environment variable with key JSON')
 
     # Plan command
     plan_parser = subparsers.add_parser('plan', help='Compare local vs remote schema')
-    plan_parser.add_argument('--key-path', required=True, help='Path to GCP service account key file')
+    plan_key_group = plan_parser.add_mutually_exclusive_group(required=True)
+    plan_key_group.add_argument('--key-path', help='Path to GCP service account key file')
+    plan_key_group.add_argument('--key-env', help='Environment variable with key JSON')
     plan_parser.add_argument('--schema-dir', default='firestore_schema', help='Schema directory')
 
     # Apply command
     apply_parser = subparsers.add_parser('apply', help='Apply local schema to Firestore')
-    apply_parser.add_argument('--key-path', required=True, help='Path to GCP service account key file')
+    apply_key_group = apply_parser.add_mutually_exclusive_group(required=True)
+    apply_key_group.add_argument('--key-path', help='Path to GCP service account key file')
+    apply_key_group.add_argument('--key-env', help='Environment variable with key JSON')
     apply_parser.add_argument('--schema-dir', default='firestore_schema', help='Schema directory')
 
     return parser
@@ -57,17 +63,26 @@ def main():
 
     if args.command == 'pull':
         cmd.append(str(script_dir / 'firestore_pull.py'))
-        cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_env') and args.key_env:
+            cmd.extend(['--key-env', args.key_env])
 
     elif args.command == 'plan':
         cmd.append(str(script_dir / 'firestore_plan.py'))
-        cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_env') and args.key_env:
+            cmd.extend(['--key-env', args.key_env])
         if args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
 
     elif args.command == 'apply':
         cmd.append(str(script_dir / 'firestore_apply.py'))
-        cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_path') and args.key_path:
+            cmd.extend(['--key-path', args.key_path])
+        if hasattr(args, 'key_env') and args.key_env:
+            cmd.extend(['--key-env', args.key_env])
         if args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
 
