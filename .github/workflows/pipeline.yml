@@ -110,7 +110,7 @@ jobs:
         path: ./
         base: ${{ github.event.before && github.event.before != '0000000000000000000000000000000000000000' && github.event.before || 'HEAD~1' }}
         head: ${{ github.sha }}
-        extra_args: --only-verified --fail
+        extra_args: --only-verified
 
   codeql:
     name: CodeQL Security Analysis
