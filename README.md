@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/PavelRavvich/firesync)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![CodeQL](https://github.com/PavelRavvich/firesync/workflows/CodeQL/badge.svg)](https://github.com/PavelRavvich/firesync/security/code-scanning)
+[![CodeQL](https://github.com/PavelRavvich/firesync/actions/workflows/pipeline.yml/badge.svg?branch=main)](https://github.com/PavelRavvich/firesync/security/code-scanning)
 [![TruffleHog](https://img.shields.io/badge/secrets-scanned-blue?logo=security&logoColor=white)](https://github.com/PavelRavvich/firesync/actions/workflows/pipeline.yml)
 
 **Infrastructure as Code for Google Cloud Firestore**
