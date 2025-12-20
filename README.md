@@ -325,12 +325,21 @@ vim firestore_schema/dev/composite-indexes.json
 ./firesync apply --env=dev
 
 # Promote dev schema to staging
+# --env-from: source environment (reads LOCAL schema files from firestore_schema/dev/)
+# --env-to: target environment (applies to REMOTE Firestore in staging project)
 ./firesync plan --env-from=dev --env-to=staging
 ./firesync apply --env-from=dev --env-to=staging
+
+# IMPORTANT: Local files for staging are NOT updated automatically!
+# Pull staging schema to update local files after migration:
+./firesync pull --env=staging
 
 # After testing, promote to production
 ./firesync plan --env-from=dev --env-to=prod
 ./firesync apply --env-from=dev --env-to=prod
+
+# Update production local files
+./firesync pull --env=prod
 ```
 
 ### Environment Migration
