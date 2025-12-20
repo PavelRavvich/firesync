@@ -30,8 +30,7 @@ secrets/*
 !secrets/.gitkeep
 
 # Firestore schema - working directory (not versioned)
-firestore_schema/*
-!firestore_schema/.gitkeep
+firestore_schema/
 
 # Testing and coverage
 .coverage
