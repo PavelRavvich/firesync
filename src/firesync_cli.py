@@ -23,30 +23,50 @@ def create_parser():
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Init command
-    init_parser = subparsers.add_parser('init', help='Initialize FireSync workspace')
+    subparsers.add_parser(
+        'init',
+        help='Initialize FireSync workspace',
+        description='Initialize FireSync workspace. Creates config.yaml for managing multiple environments.'
+    )
 
     # Env command (with sub-subcommands)
-    env_parser = subparsers.add_parser('env', help='Manage workspace environments')
+    subparsers.add_parser(
+        'env',
+        help='Manage workspace environments',
+        description='Manage workspace environments. Add, remove, list, or show environment details.'
+    )
 
     # Pull command
-    pull_parser = subparsers.add_parser('pull', help='Export Firestore schema to local files')
+    pull_parser = subparsers.add_parser(
+        'pull',
+        help='Export Firestore schema to local files',
+        description='Export Firestore schema from GCP to local JSON files'
+    )
     pull_key_group = pull_parser.add_mutually_exclusive_group(required=True)
-    pull_key_group.add_argument('--all', action='store_true', help='Pull all environments from workspace')
-    pull_key_group.add_argument('--env', help='Environment name from workspace config')
+    pull_key_group.add_argument('--all', action='store_true', help='Export schemas from all environments defined in config.yaml')
+    pull_key_group.add_argument('--env', metavar='NAME', help='Export schema from specific environment (e.g., dev, staging, prod)')
 
     # Plan command
-    plan_parser = subparsers.add_parser('plan', help='Compare local vs remote schema')
-    plan_parser.add_argument('--env-from', help='Source environment (migration mode)')
-    plan_parser.add_argument('--env-to', help='Target environment (migration mode)')
-    plan_parser.add_argument('--env', help='Environment name from workspace config')
-    plan_parser.add_argument('--schema-dir', help='Schema directory (overrides workspace config)')
+    plan_parser = subparsers.add_parser(
+        'plan',
+        help='Compare local vs remote schema',
+        description='Compare local Firestore schema against remote state or between environments'
+    )
+    plan_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: compare SOURCE local schema)')
+    plan_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: compare against TARGET local schema)')
+    plan_parser.add_argument('--env', metavar='NAME', help='Compare local schema against remote Firestore (e.g., dev, staging, prod)')
+    plan_parser.add_argument('--schema-dir', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
 
     # Apply command
-    apply_parser = subparsers.add_parser('apply', help='Apply local schema to Firestore')
-    apply_parser.add_argument('--env-from', help='Source environment (migration mode)')
-    apply_parser.add_argument('--env-to', help='Target environment (migration mode)')
-    apply_parser.add_argument('--env', help='Environment name from workspace config')
-    apply_parser.add_argument('--schema-dir', help='Schema directory (overrides workspace config)')
+    apply_parser = subparsers.add_parser(
+        'apply',
+        help='Apply local schema to Firestore',
+        description='Apply local Firestore schema to remote GCP project or migrate between environments'
+    )
+    apply_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)')
+    apply_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: apply SOURCE schema to TARGET Firestore)')
+    apply_parser.add_argument('--env', metavar='NAME', help='Apply local schema to remote Firestore (e.g., dev, staging, prod)')
+    apply_parser.add_argument('--schema-dir', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
 
     return parser
 

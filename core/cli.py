@@ -55,13 +55,14 @@ def parse_pull_args(description: str) -> argparse.Namespace:
     auth_group.add_argument(
         "--all",
         action="store_true",
-        help="Pull all environments from workspace config"
+        help="Export schemas from all environments defined in config.yaml"
     )
 
     # Single environment
     auth_group.add_argument(
         "--env",
-        help="Environment name from workspace config"
+        metavar="NAME",
+        help="Export schema from specific environment (e.g., dev, staging, prod)"
     )
 
     return parser.parse_args()
@@ -86,23 +87,27 @@ def parse_plan_args(description: str) -> argparse.Namespace:
     # Environment migration mode
     parser.add_argument(
         "--env-from",
-        help="Source environment name (for migration planning)"
+        metavar="SOURCE",
+        help="Source environment (migration mode: compare SOURCE local schema)"
     )
     parser.add_argument(
         "--env-to",
-        help="Target environment name (for migration planning)"
+        metavar="TARGET",
+        help="Target environment (migration mode: compare against TARGET local schema)"
     )
 
     # Standard mode - single environment
     parser.add_argument(
         "--env",
-        help="Environment name from workspace config"
+        metavar="NAME",
+        help="Compare local schema against remote Firestore (e.g., dev, staging, prod)"
     )
 
     # Schema directory override
     parser.add_argument(
         "--schema-dir",
-        help="Directory with schema JSON files (overrides workspace config)"
+        metavar="PATH",
+        help="Custom schema directory path (overrides workspace config)"
     )
 
     args = parser.parse_args()
@@ -129,23 +134,27 @@ def parse_apply_args(description: str) -> argparse.Namespace:
     # Environment migration mode
     parser.add_argument(
         "--env-from",
-        help="Source environment name (for migration)"
+        metavar="SOURCE",
+        help="Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)"
     )
     parser.add_argument(
         "--env-to",
-        help="Target environment name (for migration)"
+        metavar="TARGET",
+        help="Target environment (migration mode: apply SOURCE schema to TARGET Firestore)"
     )
 
     # Standard mode - single environment
     parser.add_argument(
         "--env",
-        help="Environment name from workspace config"
+        metavar="NAME",
+        help="Apply local schema to remote Firestore (e.g., dev, staging, prod)"
     )
 
     # Schema directory override
     parser.add_argument(
         "--schema-dir",
-        help="Directory with schema JSON files (overrides workspace config)"
+        metavar="PATH",
+        help="Custom schema directory path (overrides workspace config)"
     )
 
     args = parser.parse_args()

@@ -194,27 +194,43 @@ def main():
     subparsers = parser.add_subparsers(dest='subcommand', help='Environment management commands')
 
     # List command
-    list_parser = subparsers.add_parser('list', help='List all environments')
+    list_parser = subparsers.add_parser(
+        'list',
+        help='List all configured environments',
+        description='Display all environments from config.yaml with their credentials and descriptions'
+    )
     list_parser.set_defaults(func=cmd_list)
 
     # Show command
-    show_parser = subparsers.add_parser('show', help='Show environment details')
-    show_parser.add_argument('name', help='Environment name')
+    show_parser = subparsers.add_parser(
+        'show',
+        help='Show details of a specific environment',
+        description='Display detailed information about an environment including credentials, schema directory, and status'
+    )
+    show_parser.add_argument('name', help='Environment name (e.g., dev, staging, prod)')
     show_parser.set_defaults(func=cmd_show)
 
     # Add command
-    add_parser = subparsers.add_parser('add', help='Add new environment')
-    add_parser.add_argument('name', help='Environment name')
+    add_parser = subparsers.add_parser(
+        'add',
+        help='Add new environment to workspace',
+        description='Add a new environment to config.yaml. Requires either --key-path or --key-env for GCP authentication.'
+    )
+    add_parser.add_argument('name', help='Environment name (e.g., dev, staging, prod)')
     add_key_group = add_parser.add_mutually_exclusive_group(required=True)
-    add_key_group.add_argument('--key-path', help='Path to GCP service account key file')
-    add_key_group.add_argument('--key-env', help='Environment variable with key JSON')
-    add_parser.add_argument('--description', help='Environment description')
+    add_key_group.add_argument('--key-path', help='Path to GCP service account key file (relative to config.yaml)')
+    add_key_group.add_argument('--key-env', help='Environment variable name containing GCP key JSON')
+    add_parser.add_argument('--description', help='Optional description of the environment')
     add_parser.set_defaults(func=cmd_add)
 
     # Remove command
-    remove_parser = subparsers.add_parser('remove', help='Remove environment')
-    remove_parser.add_argument('name', help='Environment name')
-    remove_parser.add_argument('--force', action='store_true', help='Skip confirmation')
+    remove_parser = subparsers.add_parser(
+        'remove',
+        help='Remove environment from workspace',
+        description='Remove an environment from config.yaml. Requires confirmation unless --force is used.'
+    )
+    remove_parser.add_argument('name', help='Environment name to remove')
+    remove_parser.add_argument('--force', action='store_true', help='Skip confirmation prompt')
     remove_parser.set_defaults(func=cmd_remove)
 
     args = parser.parse_args()

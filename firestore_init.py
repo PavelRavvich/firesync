@@ -22,6 +22,12 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Main entry point for firestore_init command."""
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Initialize FireSync workspace. Creates config.yaml for managing multiple environments.'
+    )
+    parser.parse_args()
+
     try:
         config_path = init_workspace()
         print(f"\n[+] FireSync workspace initialized at: {config_path.parent}")
