@@ -12,7 +12,7 @@ import tempfile
 import shutil
 import os
 
-from core.workspace import (
+from workspace import (
     WorkspaceConfig,
     EnvironmentConfig,
     save_config,

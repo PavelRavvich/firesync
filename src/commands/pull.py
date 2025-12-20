@@ -4,9 +4,9 @@
 import logging
 import sys
 
-from core.cli import parse_pull_args, setup_client
-from core.schema import SchemaFile, ensure_schema_dir
-from core.workspace import load_config
+from cli import parse_pull_args, setup_client
+from schema import SchemaFile, ensure_schema_dir
+from workspace import load_config
 
 # Configure logging
 logging.basicConfig(

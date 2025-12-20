@@ -6,15 +6,15 @@ import sys
 from typing import Callable, List, Any, Dict
 from pathlib import Path
 
-from core.cli import parse_plan_args, setup_client
-from core.gcloud import GCloudClient
-from core.operations import (
+from cli import parse_plan_args, setup_client
+from gcloud import GCloudClient
+from operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
     TTLPolicyOperations,
 )
-from core.schema import SchemaFile, load_schema_file
-from core.workspace import load_config
+from schema import SchemaFile, load_schema_file
+from workspace import load_config
 
 # Configure logging
 logging.basicConfig(

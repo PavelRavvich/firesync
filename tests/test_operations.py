@@ -2,7 +2,7 @@
 
 import unittest
 
-from core.operations import (
+from operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
     TTLPolicyOperations,

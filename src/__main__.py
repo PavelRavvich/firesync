@@ -4,7 +4,6 @@
 import argparse
 import sys
 import subprocess
-from pathlib import Path
 
 
 def create_parser():
@@ -75,8 +74,7 @@ def main():
     """Main CLI entry point."""
     # Special handling for 'env' command - pass through directly
     if len(sys.argv) > 1 and sys.argv[1] == 'env':
-        script_dir = Path(__file__).parent.parent
-        cmd = ['python3', str(script_dir / 'firestore_env.py')] + sys.argv[2:]
+        cmd = ['python3', '-m', 'commands.env'] + sys.argv[2:]
         result = subprocess.run(cmd)
         sys.exit(result.returncode)
 
@@ -87,25 +85,21 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    # Find the project root (where firestore_*.py scripts are)
-    # src/firesync_cli.py -> src/ -> root
-    script_dir = Path(__file__).parent.parent
-
     # Build command
-    cmd = ['python3']
+    cmd = ['python3', '-m']
 
     if args.command == 'init':
-        cmd.append(str(script_dir / 'firestore_init.py'))
+        cmd.append('commands.init')
 
     elif args.command == 'pull':
-        cmd.append(str(script_dir / 'firestore_pull.py'))
+        cmd.append('commands.pull')
         if hasattr(args, 'all') and args.all:
             cmd.append('--all')
         elif hasattr(args, 'env') and args.env:
             cmd.extend(['--env', args.env])
 
     elif args.command == 'plan':
-        cmd.append(str(script_dir / 'firestore_plan.py'))
+        cmd.append('commands.plan')
         if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
             cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
         elif hasattr(args, 'env') and args.env:
@@ -114,7 +108,7 @@ def main():
             cmd.extend(['--schema-dir', args.schema_dir])
 
     elif args.command == 'apply':
-        cmd.append(str(script_dir / 'firestore_apply.py'))
+        cmd.append('commands.apply')
         if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
             cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
         elif hasattr(args, 'env') and args.env:

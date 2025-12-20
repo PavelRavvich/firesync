@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for firestore_init command."""
+"""Tests for commands.init command."""
 
 import sys
-from pathlib import Path
-
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import unittest
 import tempfile
 import shutil
 import subprocess
 import os
+from pathlib import Path
 
 
 class TestFirestoreInit(unittest.TestCase):
@@ -24,17 +20,16 @@ class TestFirestoreInit(unittest.TestCase):
 
     def test_init_success(self):
         """Test successful workspace initialization."""
-        # Get path to firestore_init.py from project root
+        # Get project root
         project_root = Path.cwd()
-        init_script = project_root / "firestore_init.py"
 
         # Prepare environment with PYTHONPATH
         env = os.environ.copy()
         env["PYTHONPATH"] = str(project_root / "src")
 
-        # Run firestore_init.py in temp directory
+        # Run commands.init module in temp directory
         result = subprocess.run(
-            [sys.executable, str(init_script)],
+            [sys.executable, "-m", "commands.init"],
             cwd=self.temp_dir,
             env=env,
             capture_output=True,
@@ -59,9 +54,8 @@ class TestFirestoreInit(unittest.TestCase):
 
     def test_init_already_exists(self):
         """Test that init fails if workspace already exists."""
-        # Get path to firestore_init.py from project root
+        # Get project root
         project_root = Path.cwd()
-        init_script = project_root / "firestore_init.py"
 
         # Prepare environment with PYTHONPATH
         env = os.environ.copy()
@@ -73,7 +67,7 @@ class TestFirestoreInit(unittest.TestCase):
 
         # Try to init again
         result = subprocess.run(
-            [sys.executable, str(init_script)],
+            [sys.executable, "-m", "commands.init"],
             cwd=self.temp_dir,
             env=env,
             capture_output=True,

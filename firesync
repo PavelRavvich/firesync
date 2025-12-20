@@ -5,9 +5,14 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root / 'src'))
 
-from firesync_cli import main
+# Import and run main from __main__.py
+import importlib.util
+spec = importlib.util.spec_from_file_location("__main__", project_root / 'src' / '__main__.py')
+main_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(main_module)
 
 if __name__ == '__main__':
-    main()
+    main_module.main()

@@ -4,7 +4,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple
 
-from core.normalizers import (
+from normalizers import (
     normalize_collection_name,
     normalize_field_path,
     normalize_fields,
@@ -13,7 +13,7 @@ from core.normalizers import (
     normalize_ttl_period,
     normalize_ttl_state,
 )
-from core.schema import (
+from schema import (
     validate_composite_index,
     validate_field_index,
     validate_ttl_policy,

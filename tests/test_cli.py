@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from core.cli import parse_pull_args, parse_plan_args, parse_apply_args, setup_client
-from core.config import FiresyncConfig
-from core.workspace import WorkspaceConfig, EnvironmentConfig
+from cli import parse_pull_args, parse_plan_args, parse_apply_args, setup_client
+from config import FiresyncConfig
+from workspace import WorkspaceConfig, EnvironmentConfig
 
 
 class TestParsePullArgs(unittest.TestCase):
@@ -109,9 +109,9 @@ class TestParseApplyArgs(unittest.TestCase):
 class TestSetupClient(unittest.TestCase):
     """Tests for setup_client function."""
 
-    @patch('core.cli.GCloudClient')
-    @patch('core.cli.load_config')
-    @patch('core.config.FiresyncConfig.from_args')
+    @patch('cli.GCloudClient')
+    @patch('cli.load_config')
+    @patch('config.FiresyncConfig.from_args')
     def test_setup_client_with_key_path(self, mock_from_args, mock_load_config, mock_gcloud):
         """Test setup_client with key_path configuration."""
         # Setup mock workspace config
@@ -147,9 +147,9 @@ class TestSetupClient(unittest.TestCase):
         mock_config.display_info.assert_called_once()
         mock_gcloud.assert_called_once_with(mock_config)
 
-    @patch('core.cli.GCloudClient')
-    @patch('core.cli.load_config')
-    @patch('core.config.FiresyncConfig.from_args')
+    @patch('cli.GCloudClient')
+    @patch('cli.load_config')
+    @patch('config.FiresyncConfig.from_args')
     def test_setup_client_with_key_env(self, mock_from_args, mock_load_config, mock_gcloud):
         """Test setup_client with key_env configuration."""
         # Setup mock workspace config
@@ -178,9 +178,9 @@ class TestSetupClient(unittest.TestCase):
         self.assertEqual(call_args['key_env'], 'GCP_KEY')
         self.assertEqual(call_args['schema_dir'], str(Path('/project/firestore_schema/staging')))
 
-    @patch('core.cli.GCloudClient')
-    @patch('core.cli.load_config')
-    @patch('core.config.FiresyncConfig.from_args')
+    @patch('cli.GCloudClient')
+    @patch('cli.load_config')
+    @patch('config.FiresyncConfig.from_args')
     def test_setup_client_with_schema_dir_override(self, mock_from_args, mock_load_config, mock_gcloud):
         """Test setup_client with schema_dir override."""
         # Setup mock workspace config

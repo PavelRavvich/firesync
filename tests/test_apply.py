@@ -1,14 +1,9 @@
-"""Unit tests for firestore_apply module."""
+"""Unit tests for commands.apply module."""
 
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add parent directory to path to import firestore_apply
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import firestore_apply
+from commands import apply as firestore_apply
 
 
 class TestApplyResources(unittest.TestCase):
