@@ -17,32 +17,18 @@ FireSync is a lightweight Python tool that brings version control and deployment
 
 - [Features](#features)
 - [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Setup](#setup)
-- [Usage](#usage)
-  - [Pull Schema from Firestore](#pull-schema-from-firestore)
-  - [Plan Changes](#plan-changes)
-  - [Apply Changes](#apply-changes)
+- [Commands Overview](#commands-overview)
+- [Workspace Mode](#workspace-mode)
+- [Usage Examples](#usage-examples)
+  - [Basic Workflow](#basic-workflow)
+  - [Multi-Environment Management](#multi-environment-management)
+  - [Environment Migration](#environment-migration)
 - [Configuration](#configuration)
-  - [Environment Variables](#environment-variables)
-  - [Custom Schema Directory](#custom-schema-directory)
-- [Workflow Example](#workflow-example)
-  - [Promoting Schema Changes: Dev → Staging → Production](#promoting-schema-changes-dev--staging--production)
-  - [Syncing Schema from Production to Lower Environments](#syncing-schema-from-production-to-lower-environments)
 - [Schema Files](#schema-files)
-  - [composite-indexes.json](#composite-indexesjson)
-  - [field-indexes.json](#field-indexesjson)
-  - [ttl-policies.json](#ttl-policiesjson)
-- [Project Structure](#project-structure)
-- [Limitations](#limitations)
+- [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
-  - [Authentication Issues](#authentication-issues)
-  - [Permission Denied](#permission-denied)
-  - [Schema Files Not Found](#schema-files-not-found)
 - [Contributing](#contributing)
 - [License](#license)
-- [Author](#author)
 
 ## Features
 
@@ -59,7 +45,11 @@ FireSync is a lightweight Python tool that brings version control and deployment
 
 - Python 3.8+
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (gcloud CLI)
-- GCP service account with Firestore permissions
+- GCP service account with Firestore permissions:
+  - `datastore.indexes.list`
+  - `datastore.indexes.create`
+  - `datastore.indexes.update`
+  - `firebase.projects.get`
 
 ### Installation
 
@@ -75,125 +65,299 @@ Or install as a Python package:
 pip3 install -e .
 ```
 
-### Setup
+### All Commands
 
-1. Create a GCP service account with Firestore permissions:
-   - `datastore.indexes.list`
-   - `datastore.indexes.create`
-   - `datastore.indexes.update`
-   - `firebase.projects.get`
+Get help on any command:
 
-2. Download the service account key:
 ```bash
-# Save your key anywhere you want
-mv ~/Downloads/your-key.json ./gcp-key.json
+./firesync --help
+./firesync pull --help
+./firesync plan --help
+./firesync apply --help
+./firesync env --help
 ```
 
-3. Pull your current Firestore schema:
+**Available Commands:**
+
+- `firesync init` - Initialize workspace with config.yaml
+- `firesync env add <name>` - Add environment to workspace
+- `firesync env remove <name>` - Remove environment from workspace
+- `firesync env list` - List all environments
+- `firesync env show <name>` - Show environment details
+- `firesync pull` - Export Firestore schema to local files
+- `firesync plan` - Compare local vs remote schemas
+- `firesync apply` - Deploy local schema to Firestore
+
+### Quick Setup
+
+1. Initialize workspace:
 ```bash
-./firesync pull --key-path=./gcp-key.json
+./firesync init
 ```
 
-This creates `firestore_schema/` with your current configuration.
+2. Add your environments:
+```bash
+./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
+./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
+./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
+```
 
-## Usage
+3. Pull schemas from all environments:
+```bash
+./firesync pull --all
+```
 
-### Pull Schema from Firestore
+## Commands Overview
 
-Export current Firestore configuration to local JSON files:
+### firesync init
+
+Initialize a new FireSync workspace. Creates `config.yaml` to manage multiple environments.
 
 ```bash
-# Using key file
-./firesync pull --key-path=./gcp-key.json
+./firesync init
+```
+
+Creates:
+- `config.yaml` - Workspace configuration
+- `firestore_schema/` - Default schema directory
+
+### firesync env
+
+Manage environments in your workspace.
+
+**Add environment:**
+```bash
+# Using key file path
+./firesync env add dev --key-path=./secrets/gcp-key-dev.json
+
+# Using key file path with description
+./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
 
 # Using environment variable
-./firesync pull --key-env=GCP_KEY
+./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
 ```
 
-Or using the old script directly:
+**List environments:**
 ```bash
-./firestore_pull.py --key-path=./gcp-key.json
+./firesync env list
+# Shows environment names with key paths (including absolute paths) or key env variables
+# Example output:
+#   • dev
+#     key_path: secrets/gcp-key-dev.json - Development environment (/absolute/path/to/secrets/gcp-key-dev.json)
+#   • prod
+#     key_env: GCP_PROD_KEY - Production environment
 ```
 
-### Plan Changes
+**Show environment details:**
+```bash
+./firesync env show dev
+```
 
-Compare local schema against remote Firestore and preview what would change:
+**Remove environment:**
+```bash
+./firesync env remove dev
+```
+
+### firesync pull
+
+Export Firestore schema from GCP to local JSON files.
+
+**Pull all environments:**
+```bash
+./firesync pull --all
+```
+
+**Pull single environment:**
+```bash
+./firesync pull --env=dev
+```
+
+Creates three JSON files in schema directory:
+- `composite-indexes.json` - Composite indexes
+- `field-indexes.json` - Single-field indexes
+- `ttl-policies.json` - TTL policies
+
+### firesync plan
+
+Compare local schema against remote Firestore and preview changes.
+
+**Compare local vs remote:**
+```bash
+./firesync plan --env=dev
+```
+
+**Migration mode - compare two environments (local vs local):**
+```bash
+./firesync plan --env-from=dev --env-to=staging
+```
+
+**With custom schema directory:**
+```bash
+./firesync plan --env=dev --schema-dir=custom_schemas
+```
+
+Output shows:
+- `[+] WILL CREATE` - Resource exists locally but not remotely
+- `[-] WILL DELETE` - Resource exists remotely but not locally
+- `[~] WILL UPDATE` - Resource differs between local and remote
+- `[~] No changes` - Schemas are in sync
+
+### firesync apply
+
+Deploy local schema to Firestore.
+
+**Apply to environment:**
+```bash
+./firesync apply --env=dev
+```
+
+**Migration mode - apply source schema to target environment:**
+```bash
+./firesync apply --env-from=dev --env-to=staging
+```
+
+**With custom schema directory:**
+```bash
+./firesync apply --env=prod --schema-dir=custom_schemas
+```
+
+**Note:** Apply operations are idempotent and skip existing resources. Delete operations are not implemented for safety.
+
+## Workspace Configuration
+
+FireSync uses `config.yaml` to manage multiple environments with separate schemas.
+
+### Workspace Structure
+
+```
+your-project/
+├── config.yaml                    # Workspace configuration
+├── firestore_schema/              # Schema directories per environment
+│   ├── dev/
+│   │   ├── composite-indexes.json
+│   │   ├── field-indexes.json
+│   │   └── ttl-policies.json
+│   ├── staging/
+│   │   ├── composite-indexes.json
+│   │   ├── field-indexes.json
+│   │   └── ttl-policies.json
+│   └── prod/
+│       ├── composite-indexes.json
+│       ├── field-indexes.json
+│       └── ttl-policies.json
+└── secrets/                       # GCP service account keys (gitignored)
+    ├── gcp-key-dev.json
+    ├── gcp-key-staging.json
+    └── gcp-key-prod.json
+```
+
+### config.yaml Format
+
+```yaml
+version: 1
+schema_base_dir: firestore_schema
+
+environments:
+  dev:
+    key_path: secrets/gcp-key-dev.json
+    schema_dir: dev
+  staging:
+    key_path: secrets/gcp-key-staging.json
+    schema_dir: staging
+  prod:
+    key_env: GCP_PROD_KEY
+    schema_dir: prod
+```
+
+**Fields:**
+- `version` - Config format version (always 1)
+- `schema_base_dir` - Base directory for all schema files
+- `environments` - Map of environment configurations
+  - `key_path` - Path to GCP service account key (relative to config.yaml)
+  - `key_env` - Name of environment variable containing key JSON
+  - `schema_dir` - Schema directory name (relative to schema_base_dir)
+
+## Usage Examples
+
+### Basic Workflow
 
 ```bash
-./firesync plan --key-path=./gcp-key.json
+# 1. Initialize workspace
+./firesync init
+
+# 2. Add environment
+./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
+
+# 3. Pull current schema
+./firesync pull --env=dev
+
+# 4. Edit schema files (add/modify indexes)
+vim firestore_schema/dev/composite-indexes.json
+
+# 5. Preview changes
+./firesync plan --env=dev
+
+# 6. Apply changes
+./firesync apply --env=dev
+
+# 7. Commit to git
+git add config.yaml firestore_schema/
+git commit -m "Add user query index"
 ```
 
-Or using the old script directly:
+### Multi-Environment Management
+
+Manage dev, staging, and production environments separately:
+
 ```bash
-./firestore_plan.py --key-path=./gcp-key.json
+# Set up all environments
+./firesync init
+./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
+./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
+./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
+
+# Pull schemas from all environments
+./firesync pull --all
+
+# Work on dev environment
+vim firestore_schema/dev/composite-indexes.json
+./firesync plan --env=dev
+./firesync apply --env=dev
+
+# Promote dev schema to staging
+./firesync plan --env-from=dev --env-to=staging
+./firesync apply --env-from=dev --env-to=staging
+
+# After testing, promote to production
+./firesync plan --env-from=dev --env-to=prod
+./firesync apply --env-from=dev --env-to=prod
 ```
 
-Output example:
-```
-🔍 Comparing Composite Indexes
-[+] WILL CREATE: users COLLECTION email:ascending | createdAt:descending
-[-] WILL DELETE: orders COLLECTION status:ascending
+### Environment Migration
 
-🔍 Comparing Single-Field Indexes
-[+] WILL CREATE FIELD INDEX: ('products', 'price') => ascending
-
-✔️ Plan complete.
-```
-
-### Apply Changes
-
-Deploy local schema to Firestore:
+Compare and migrate schemas between environments:
 
 ```bash
-./firesync apply --key-path=./gcp-key.json
-```
+# Compare dev and staging schemas (local vs local)
+./firesync plan --env-from=dev --env-to=staging
 
-Or using the old script directly:
-```bash
-./firestore_apply.py --key-path=./gcp-key.json
+# Apply dev schema to staging environment
+./firesync apply --env-from=dev --env-to=staging
+
+# Verify changes
+./firesync pull --env=staging
+git diff firestore_schema/staging/
 ```
 
 ## Configuration
 
 ### Custom Schema Directory
 
-```bash
-./firesync plan --key-path=./gcp-key.json --schema-dir=custom_schemas
-./firesync apply --key-path=./gcp-key.json --schema-dir=custom_schemas
-```
-
-### Multi-Project Setup
-
-Organize keys for different projects:
+Override the schema directory for any command:
 
 ```bash
-# Development project
-./firesync pull --key-path=./keys/dev-project.json
-
-# Staging project
-./firesync plan --key-path=./keys/staging-project.json
-
-# Production project
-./firesync apply --key-path=./keys/prod-project.json
-```
-
-### Using Environment Variables (CI/CD)
-
-For CI/CD pipelines where keys are stored as secrets:
-
-```bash
-# Set key as environment variable
-export GCP_SERVICE_KEY='{"project_id":"...","private_key":"..."}'
-./firesync pull --key-env=GCP_SERVICE_KEY
-
-# Or inline
-GCP_KEY='{"project_id":"..."}' ./firesync plan --key-env=GCP_KEY
-
-# GitHub Actions example
-- name: Deploy to Firestore
-  env:
-    GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-  run: ./firesync apply --key-env=GCP_KEY
+./firesync plan --env=dev --schema-dir=custom_schemas
+./firesync apply --env=staging --schema-dir=backups/schemas_2024
 ```
 
 ## Schema Files
@@ -341,29 +505,143 @@ Example:
 ```
 firesync/
 ├── firesync                   # Unified CLI entry point
-├── firestore_pull.py          # Export schema from Firestore (legacy)
-├── firestore_plan.py          # Compare local vs remote (legacy)
-├── firestore_apply.py         # Apply schema to Firestore (legacy)
+├── firestore_init.py          # Initialize workspace
+├── firestore_env.py           # Environment management
+├── firestore_pull.py          # Export schema from Firestore
+├── firestore_plan.py          # Compare local vs remote
+├── firestore_apply.py         # Apply schema to Firestore
+├── core/                      # Core Python package
+│   ├── __init__.py
+│   ├── cli.py                 # CLI argument parsing utilities
+│   ├── config.py              # Configuration management
+│   ├── gcloud.py              # GCloud CLI wrapper
+│   ├── normalizers.py         # Data normalization
+│   ├── operations.py          # Resource operations
+│   ├── schema.py              # Schema file handling
+│   └── workspace.py           # Workspace configuration
 ├── src/
-│   ├── core/                  # Core Python package
-│   │   ├── __init__.py
-│   │   ├── config.py
-│   │   ├── gcloud.py
-│   │   ├── normalizers.py
-│   │   ├── operations.py
-│   │   └── schema.py
 │   └── firesync_cli.py        # CLI implementation
-├── firestore_schema/          # Schema JSON files
-│   ├── .gitkeep
-│   ├── composite-indexes.json
-│   ├── field-indexes.json
-│   └── ttl-policies.json
-├── gcp-key.json               # GCP service account key (gitignored)
+├── config.yaml                # Workspace configuration
+├── firestore_schema/          # Schema directories (per environment)
+│   ├── dev/
+│   │   ├── composite-indexes.json
+│   │   ├── field-indexes.json
+│   │   └── ttl-policies.json
+│   ├── staging/
+│   │   ├── composite-indexes.json
+│   │   ├── field-indexes.json
+│   │   └── ttl-policies.json
+│   └── prod/
+│       ├── composite-indexes.json
+│       ├── field-indexes.json
+│       └── ttl-policies.json
+├── secrets/                   # GCP service account keys (gitignored)
+│   ├── gcp-key-dev.json
+│   ├── gcp-key-staging.json
+│   └── gcp-key-prod.json
 ├── pyproject.toml             # Package configuration
 ├── setup.py                   # Backward compatibility
 ├── .gitignore
 ├── LICENSE
 └── README.md
+```
+
+## CI/CD Integration
+
+### GitHub Actions - Single Environment
+
+```yaml
+name: Deploy Firestore Schema
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Create config.yaml
+        run: |
+          echo "version: 1" > config.yaml
+          echo "schema_base_dir: firestore_schema" >> config.yaml
+          echo "environments:" >> config.yaml
+          echo "  prod:" >> config.yaml
+          echo "    key_env: GCP_KEY" >> config.yaml
+          echo "    schema_dir: prod" >> config.yaml
+
+      - name: Plan schema changes
+        env:
+          GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        run: ./firesync plan --env=prod
+
+      - name: Apply schema changes
+        env:
+          GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        run: ./firesync apply --env=prod
+```
+
+### GitHub Actions - Multi-Environment Pipeline
+
+```yaml
+name: Deploy to All Environments
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - name: Deploy to dev
+        env:
+          GCP_DEV_KEY: ${{ secrets.GCP_DEV_KEY }}
+        run: |
+          ./firesync plan --env=dev
+          ./firesync apply --env=dev
+
+  deploy-staging:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - name: Deploy to staging
+        env:
+          GCP_STAGING_KEY: ${{ secrets.GCP_STAGING_KEY }}
+        run: |
+          ./firesync plan --env=staging
+          ./firesync apply --env=staging
+
+  deploy-prod:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - name: Deploy to production
+        env:
+          GCP_PROD_KEY: ${{ secrets.GCP_PROD_KEY }}
+        run: |
+          ./firesync plan --env=prod
+          ./firesync apply --env=prod
 ```
 
 ## Limitations
