@@ -41,7 +41,7 @@ def compare_and_display(
         compare_func: Function to compare local vs remote
         format_func: Function to format diff items for display
     """
-    print(f"\n🔍 Comparing {resource_name}")
+    print(f"\n[~] Comparing {resource_name}")
     try:
         remote = fetch_remote()
         local = load_schema_file(schema_file)
@@ -81,7 +81,7 @@ def compare_local_schemas(
         compare_func: Function to compare schemas
         format_func: Function to format diff items for display
     """
-    print(f"\n🔍 Comparing {resource_name}")
+    print(f"\n[~] Comparing {resource_name}")
     try:
         source = load_schema_file(source_schema_file)
         target = load_schema_file(target_schema_file)
@@ -121,7 +121,7 @@ def main():
         source_schema_dir = workspace_config.get_schema_dir(args.env_from)
         target_schema_dir = workspace_config.get_schema_dir(args.env_to)
 
-        print(f"\n📋 Migration Plan: {args.env_from} → {args.env_to}")
+        print(f"\nMigration Plan: {args.env_from} -> {args.env_to}")
         print(f"   Source: {source_schema_dir}")
         print(f"   Target: {target_schema_dir}")
 

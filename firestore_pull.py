@@ -38,7 +38,7 @@ def pull_single_environment(env_name):
         config.schema_dir / SchemaFile.TTL_POLICIES
     )
 
-    print(f"✔️ Firestore schema exported to: {config.schema_dir}")
+    print(f"[+] Firestore schema exported to: {config.schema_dir}")
     return True
 
 
@@ -79,7 +79,7 @@ def main():
 
         # Summary
         print("=" * 60)
-        print(f"\n✔️ Successfully pulled {success_count}/{env_count} environment(s)")
+        print(f"\n[+] Successfully pulled {success_count}/{env_count} environment(s)")
         if failed_envs:
             print(f"[!] Failed environments: {', '.join(failed_envs)}")
             sys.exit(1)

@@ -175,7 +175,7 @@ def main():
         # Apply source schema to target environment
         apply_schema_from_directory(target_client, source_schema_dir)
 
-        print(f"\n✔️ Migration applied: {args.env_from} schema → {args.env_to} Firestore")
+        print(f"\n[+] Migration applied: {args.env_from} schema -> {args.env_to} Firestore")
 
     else:
         # Standard mode: apply local schema to remote

@@ -129,8 +129,8 @@ class TestAddEnvironment(unittest.TestCase):
 
             prod_env = config.environments["production"]
             self.assertEqual(prod_env.name, "production")
-            # Path should be relative to config.yaml
-            self.assertEqual(prod_env.key_path, "../keys/prod.json")
+            # Path should be relative to config.yaml (normalize for cross-platform)
+            self.assertEqual(Path(prod_env.key_path), Path("../keys/prod.json"))
             self.assertEqual(prod_env.description, "Production environment")
         finally:
             os.chdir(original_cwd)
@@ -302,11 +302,11 @@ class TestPathRecalculation(unittest.TestCase):
             config = load_config(self.config_path)
             prod_env = config.environments["prod"]
 
-            # Path should be relative to config.yaml location
+            # Path should be relative to config.yaml location (normalize for cross-platform)
             # config.yaml is at: temp_dir/project/firestore-migration/config.yaml
             # key is at: temp_dir/keys/prod.json
             # relative path: ../../keys/prod.json
-            self.assertEqual(prod_env.key_path, "../../keys/prod.json")
+            self.assertEqual(Path(prod_env.key_path), Path("../../keys/prod.json"))
 
             # Verify absolute path is correct
             abs_key_path = config.config_dir / prod_env.key_path

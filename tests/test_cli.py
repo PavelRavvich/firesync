@@ -137,11 +137,13 @@ class TestSetupClient(unittest.TestCase):
         # Verify
         mock_load_config.assert_called_once()
         workspace_config.get_env.assert_called_once_with('dev')
-        mock_from_args.assert_called_once_with(
-            key_path='/test/secrets/key.json',
-            key_env=None,
-            schema_dir='/test/firestore_schema/dev'
-        )
+
+        # Check call arguments (convert paths to strings for cross-platform compatibility)
+        call_args = mock_from_args.call_args[1]
+        self.assertEqual(call_args['key_path'], str(Path('/test/secrets/key.json')))
+        self.assertIsNone(call_args['key_env'])
+        self.assertEqual(call_args['schema_dir'], str(Path('/test/firestore_schema/dev')))
+
         mock_config.display_info.assert_called_once()
         mock_gcloud.assert_called_once_with(mock_config)
 
@@ -170,12 +172,11 @@ class TestSetupClient(unittest.TestCase):
         # Call setup_client
         config, client = setup_client('staging')
 
-        # Verify
-        mock_from_args.assert_called_once_with(
-            key_path=None,
-            key_env='GCP_KEY',
-            schema_dir='/project/firestore_schema/staging'
-        )
+        # Verify (convert paths to strings for cross-platform compatibility)
+        call_args = mock_from_args.call_args[1]
+        self.assertIsNone(call_args['key_path'])
+        self.assertEqual(call_args['key_env'], 'GCP_KEY')
+        self.assertEqual(call_args['schema_dir'], str(Path('/project/firestore_schema/staging')))
 
     @patch('core.cli.GCloudClient')
     @patch('core.cli.load_config')

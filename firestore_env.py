@@ -35,7 +35,7 @@ def cmd_list(args):
             print(f"\nRun 'firesync env add <name> --key-path=<path>' to add an environment.")
             return
 
-        print(f"\n📋 Environments in {config.config_path}:\n")
+        print(f"\nEnvironments in {config.config_path}:\n")
         for env_name, env_config in config.environments.items():
             desc = f" - {env_config.description}" if env_config.description else ""
             print(f"  • {env_name}")
@@ -65,7 +65,7 @@ def cmd_show(args):
         config = load_config()
         env_config = config.get_env(args.name)
 
-        print(f"\n🔍 Environment: {args.name}\n")
+        print(f"\nEnvironment: {args.name}\n")
 
         if env_config.key_path:
             print(f"  Authentication: key_path")
@@ -119,7 +119,7 @@ def cmd_add(args):
             description=args.description
         )
 
-        print(f"\n✔️ Environment '{args.name}' added successfully")
+        print(f"\n[+] Environment '{args.name}' added successfully")
 
         # Show what was added
         config = load_config()
@@ -169,7 +169,7 @@ def cmd_remove(args):
                 return
 
         remove_environment(args.name)
-        print(f"\n✔️ Environment '{args.name}' removed successfully\n")
+        print(f"\n[+] Environment '{args.name}' removed successfully\n")
 
     except FileNotFoundError as e:
         print(f"[!] {e}")

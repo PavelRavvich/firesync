@@ -24,7 +24,7 @@ def main():
     """Main entry point for firestore_init command."""
     try:
         config_path = init_workspace()
-        print(f"\n✔️ FireSync workspace initialized at: {config_path.parent}")
+        print(f"\n[+] FireSync workspace initialized at: {config_path.parent}")
         print(f"\nNext steps:")
         print(f"1. Edit {config_path} to add your environments")
         print(f"2. Add service account keys to your project")
