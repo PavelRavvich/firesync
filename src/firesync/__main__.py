@@ -3,7 +3,7 @@
 
 import argparse
 import sys
-import subprocess
+import os
 
 
 def create_parser():
@@ -87,107 +87,121 @@ def create_parser():
     return parser
 
 
+def run_init():
+    """Run init command."""
+    original_argv = sys.argv
+    try:
+        sys.argv = ['firesync-init']
+        from firesync.commands.init import main as init_main
+        init_main()
+    finally:
+        sys.argv = original_argv
+
+
+def run_env(argv):
+    """Run env command."""
+    # Save original argv
+    original_argv = sys.argv
+    try:
+        # Set argv for env command (remove 'env' subcommand)
+        sys.argv = [sys.argv[0]] + argv
+        from firesync.commands.env import main as env_main
+        env_main()
+    finally:
+        # Restore original argv
+        sys.argv = original_argv
+
+
+def run_pull(args):
+    """Run pull command."""
+    # Save original argv
+    original_argv = sys.argv
+    try:
+        # Build argv for pull command
+        sys.argv = ['firesync-pull']
+        if args.all:
+            sys.argv.append('--all')
+        elif args.env:
+            sys.argv.extend(['--env', args.env])
+
+        from firesync.commands.pull import main as pull_main
+        pull_main()
+    finally:
+        sys.argv = original_argv
+
+
+def run_plan(args):
+    """Run plan command."""
+    original_argv = sys.argv
+    try:
+        sys.argv = ['firesync-plan']
+        if args.from_env and args.to_env:
+            sys.argv.extend(['--from', args.from_env, '--to', args.to_env])
+        elif args.env:
+            sys.argv.extend(['--env', args.env])
+        if args.schema_dir:
+            sys.argv.extend(['--schema-dir', args.schema_dir])
+
+        from firesync.commands.plan import main as plan_main
+        plan_main()
+    finally:
+        sys.argv = original_argv
+
+
+def run_apply(args):
+    """Run apply command."""
+    original_argv = sys.argv
+    try:
+        sys.argv = ['firesync-apply']
+        if args.from_env and args.to_env:
+            sys.argv.extend(['--from', args.from_env, '--to', args.to_env])
+        elif args.env:
+            sys.argv.extend(['--env', args.env])
+        if args.schema_dir:
+            sys.argv.extend(['--schema-dir', args.schema_dir])
+        if args.auto_approve:
+            sys.argv.append('--auto-approve')
+        if args.dry_run:
+            sys.argv.append('--dry-run')
+
+        from firesync.commands.apply import main as apply_main
+        apply_main()
+    finally:
+        sys.argv = original_argv
+
+
 def main():
     """Main CLI entry point."""
-    import os
-    from pathlib import Path
-
-    # Ensure PYTHONPATH includes src directory
-    # Get the src directory (parent of this __main__.py file)
-    src_dir = Path(__file__).parent.resolve()
-
-    # Special handling for 'env' command - pass through directly
-    if len(sys.argv) > 1 and sys.argv[1] == 'env':
-        # Set up environment variables for global flags
-        env = os.environ.copy()
-        if '--verbose' in sys.argv or '-v' in sys.argv:
-            env['FIRESYNC_VERBOSE'] = '1'
-        if '--quiet' in sys.argv or '-q' in sys.argv:
-            env['FIRESYNC_QUIET'] = '1'
-
-        # Set PYTHONPATH to ONLY our src directory FIRST (prepend, not replace)
-        # This ensures our modules are found before any others
-        existing_pythonpath = env.get('PYTHONPATH', '')
-        if existing_pythonpath:
-            env['PYTHONPATH'] = f"{src_dir}{os.pathsep}{existing_pythonpath}"
-        else:
-            env['PYTHONPATH'] = str(src_dir)
-        env['PYTHONDONTWRITEBYTECODE'] = '1'
-
-        # Remove global flags from argv before passing to subcommand
-        filtered_args = [arg for arg in sys.argv[2:] if arg not in ('--verbose', '-v', '--quiet', '-q')]
-
-        # Run command - DO NOT change cwd, keep user's current directory
-        # Run the command file directly instead of using -m to avoid sys.path[0] issues
-        command_file = src_dir / 'commands' / 'env.py'
-        cmd = ['python3', str(command_file)] + filtered_args
-        result = subprocess.run(cmd, env=env)
-        sys.exit(result.returncode)
+    # Set up environment variables for global flags before parsing
+    if '--verbose' in sys.argv or '-v' in sys.argv:
+        os.environ['FIRESYNC_VERBOSE'] = '1'
+    if '--quiet' in sys.argv or '-q' in sys.argv:
+        os.environ['FIRESYNC_QUIET'] = '1'
 
     parser = create_parser()
+
+    # Special handling for 'env' command - it has sub-subcommands
+    if len(sys.argv) > 1 and sys.argv[1] == 'env':
+        # Remove global flags and pass the rest to env command
+        env_args = [arg for arg in sys.argv[2:] if arg not in ('--verbose', '-v', '--quiet', '-q')]
+        run_env(env_args)
+        return
+
     args = parser.parse_args()
 
     if not args.command:
         parser.print_help()
         sys.exit(1)
 
-    # Set up environment variables for global flags
-    env = os.environ.copy()
-    if args.verbose:
-        env['FIRESYNC_VERBOSE'] = '1'
-    if args.quiet:
-        env['FIRESYNC_QUIET'] = '1'
-
-    # Set PYTHONPATH to ONLY our src directory FIRST (prepend, not replace)
-    # This ensures our modules are found before any others
-    existing_pythonpath = env.get('PYTHONPATH', '')
-    if existing_pythonpath:
-        env['PYTHONPATH'] = f"{src_dir}{os.pathsep}{existing_pythonpath}"
-    else:
-        env['PYTHONPATH'] = str(src_dir)
-    env['PYTHONDONTWRITEBYTECODE'] = '1'
-
-    # Build command - run command files directly instead of using -m
-    # This avoids sys.path[0] being set to current directory
-    cmd = ['python3']
-
+    # Route to appropriate command handler
     if args.command == 'init':
-        cmd.append(str(src_dir / 'commands' / 'init.py'))
-
+        run_init()
     elif args.command == 'pull':
-        cmd.append(str(src_dir / 'commands' / 'pull.py'))
-        if hasattr(args, 'all') and args.all:
-            cmd.append('--all')
-        elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
-
+        run_pull(args)
     elif args.command == 'plan':
-        cmd.append(str(src_dir / 'commands' / 'plan.py'))
-        if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
-            cmd.extend(['--from', args.from_env, '--to', args.to_env])
-        elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
-        if hasattr(args, 'schema_dir') and args.schema_dir:
-            cmd.extend(['--schema-dir', args.schema_dir])
-
+        run_plan(args)
     elif args.command == 'apply':
-        cmd.append(str(src_dir / 'commands' / 'apply.py'))
-        if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
-            cmd.extend(['--from', args.from_env, '--to', args.to_env])
-        elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
-        if hasattr(args, 'schema_dir') and args.schema_dir:
-            cmd.extend(['--schema-dir', args.schema_dir])
-        if hasattr(args, 'auto_approve') and args.auto_approve:
-            cmd.append('--auto-approve')
-        if hasattr(args, 'dry_run') and args.dry_run:
-            cmd.append('--dry-run')
-
-    # Execute the command with environment variables
-    # DO NOT change cwd - keep user's current directory for workspace detection
-    # PYTHONPATH ensures correct modules are imported
-    result = subprocess.run(cmd, env=env)
-    sys.exit(result.returncode)
+        run_apply(args)
 
 
 if __name__ == '__main__':

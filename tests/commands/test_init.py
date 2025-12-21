@@ -27,9 +27,9 @@ class TestFirestoreInit(unittest.TestCase):
         env = os.environ.copy()
         env["PYTHONPATH"] = str(project_root / "src")
 
-        # Run commands.init module in temp directory
+        # Run firesync.commands.init module in temp directory
         result = subprocess.run(
-            [sys.executable, "-m", "commands.init"],
+            [sys.executable, "-m", "firesync.commands.init"],
             cwd=self.temp_dir,
             env=env,
             capture_output=True,
@@ -67,7 +67,7 @@ class TestFirestoreInit(unittest.TestCase):
 
         # Try to init again
         result = subprocess.run(
-            [sys.executable, "-m", "commands.init"],
+            [sys.executable, "-m", "firesync.commands.init"],
             cwd=self.temp_dir,
             env=env,
             capture_output=True,

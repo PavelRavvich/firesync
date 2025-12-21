@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FireSync CLI wrapper."""
+"""FireSync CLI wrapper for development."""
 
 import sys
 from pathlib import Path
@@ -13,10 +13,9 @@ sys.path.insert(0, str(project_root / 'src'))
 
 # Now we can safely import and run
 if __name__ == '__main__':
-    # Import the src package's __main__ module
-    import importlib.util
-    main_path = project_root / 'src' / '__main__.py'
-    spec = importlib.util.spec_from_file_location("firesync_main", main_path)
-    main_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(main_module)
-    main_module.main()
+    # Fix sys.argv[0] to be 'firesync' for proper argparse behavior
+    sys.argv[0] = 'firesync'
+
+    # Import firesync package's __main__ module
+    from firesync.__main__ import main
+    main()

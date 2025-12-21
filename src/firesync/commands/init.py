@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 
-from workspace import init_workspace, CONFIG_DIR_NAME
+from ..workspace import init_workspace, CONFIG_DIR_NAME
 
 # Configure logging
 logging.basicConfig(

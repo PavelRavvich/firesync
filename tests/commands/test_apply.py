@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from commands import apply as firestore_apply
+from firesync.commands import apply as firestore_apply
 
 
 class TestApplyResources(unittest.TestCase):

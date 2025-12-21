@@ -3,10 +3,10 @@
 
 import sys
 
-from cli import parse_pull_args, setup_client
-from schema import SchemaFile, ensure_schema_dir
-from workspace import load_config
-from logger import setup_logging
+from ..cli import parse_pull_args, setup_client
+from ..schema import SchemaFile, ensure_schema_dir
+from ..workspace import load_config
+from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()

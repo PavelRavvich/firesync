@@ -6,12 +6,12 @@ import argparse
 from pathlib import Path
 
 
-from workspace import (
+from ..workspace import (
     load_config,
     add_environment,
     remove_environment,
 )
-from logger import setup_logging
+from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()

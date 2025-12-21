@@ -1,1 +1,1 @@
-"""Unit tests for FireSync."""
+"""Tests for firesync package."""

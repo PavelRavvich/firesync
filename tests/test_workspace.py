@@ -4,15 +4,12 @@
 import sys
 from pathlib import Path
 
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import unittest
 import tempfile
 import shutil
 from unittest.mock import patch, mock_open
 
-from workspace import (
+from firesync.workspace import (
     EnvironmentConfig,
     WorkspaceConfig,
     find_config,
@@ -160,7 +157,7 @@ class TestFindConfig(unittest.TestCase):
         # Result depends on whether config exists on system, but should not crash
         self.assertIsInstance(found, (Path, type(None)))
 
-    @patch('workspace.Path.cwd')
+    @patch('firesync.workspace.Path.cwd')
     def test_find_config_uses_cwd_by_default(self, mock_cwd):
         """Test that find_config uses current directory by default."""
         mock_cwd.return_value = Path(self.temp_dir)
@@ -379,7 +376,7 @@ settings:
             load_config(self.config_path)
         self.assertIn("'settings.schema_dir' must be a string", str(ctx.exception))
 
-    @patch('workspace.find_config')
+    @patch('firesync.workspace.find_config')
     def test_load_config_searches_when_path_not_provided(self, mock_find):
         """Test that load_config searches for config when path is not provided."""
         mock_find.return_value = self.config_path
@@ -397,7 +394,7 @@ settings:
         mock_find.assert_called_once()
         self.assertEqual(config.config_path, self.config_path)
 
-    @patch('workspace.find_config')
+    @patch('firesync.workspace.find_config')
     def test_load_config_not_found_when_searching(self, mock_find):
         """Test that FileNotFoundError is raised when config is not found during search."""
         mock_find.return_value = None
@@ -458,7 +455,7 @@ class TestInitWorkspace(unittest.TestCase):
             init_workspace(Path(self.temp_dir))
         self.assertIn("already exists", str(ctx.exception))
 
-    @patch('workspace.Path.cwd')
+    @patch('firesync.workspace.Path.cwd')
     def test_init_workspace_uses_cwd_by_default(self, mock_cwd):
         """Test that init_workspace uses current directory by default."""
         mock_cwd.return_value = Path(self.temp_dir)
