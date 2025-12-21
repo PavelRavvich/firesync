@@ -42,15 +42,15 @@ class TestParsePlanArgs(unittest.TestCase):
         with patch.object(sys, 'argv', ['prog', '--env', 'dev']):
             args = parse_plan_args("Test description")
             self.assertEqual(args.env, 'dev')
-            self.assertIsNone(args.env_from)
-            self.assertIsNone(args.env_to)
+            self.assertIsNone(args.from_env)
+            self.assertIsNone(args.to_env)
 
     def test_parse_plan_migration(self):
         """Test parsing migration mode arguments."""
-        with patch.object(sys, 'argv', ['prog', '--env-from', 'dev', '--env-to', 'staging']):
+        with patch.object(sys, 'argv', ['prog', '--from', 'dev', '--to', 'staging']):
             args = parse_plan_args("Test description")
-            self.assertEqual(args.env_from, 'dev')
-            self.assertEqual(args.env_to, 'staging')
+            self.assertEqual(args.from_env, 'dev')
+            self.assertEqual(args.to_env, 'staging')
             self.assertIsNone(args.env)
 
     def test_parse_plan_with_schema_dir(self):
@@ -62,13 +62,13 @@ class TestParsePlanArgs(unittest.TestCase):
 
     def test_parse_plan_migration_with_env_error(self):
         """Test that migration mode and env are mutually exclusive."""
-        with patch.object(sys, 'argv', ['prog', '--env-from', 'dev', '--env-to', 'staging', '--env', 'prod']):
+        with patch.object(sys, 'argv', ['prog', '--from', 'dev', '--to', 'staging', '--env', 'prod']):
             with self.assertRaises(SystemExit):
                 parse_plan_args("Test description")
 
     def test_parse_plan_incomplete_migration_error(self):
         """Test that both env-from and env-to must be specified."""
-        with patch.object(sys, 'argv', ['prog', '--env-from', 'dev']):
+        with patch.object(sys, 'argv', ['prog', '--from', 'dev']):
             with self.assertRaises(SystemExit):
                 parse_plan_args("Test description")
 
@@ -87,15 +87,15 @@ class TestParseApplyArgs(unittest.TestCase):
         with patch.object(sys, 'argv', ['prog', '--env', 'dev']):
             args = parse_apply_args("Test description")
             self.assertEqual(args.env, 'dev')
-            self.assertIsNone(args.env_from)
-            self.assertIsNone(args.env_to)
+            self.assertIsNone(args.from_env)
+            self.assertIsNone(args.to_env)
 
     def test_parse_apply_migration(self):
         """Test parsing migration mode arguments."""
-        with patch.object(sys, 'argv', ['prog', '--env-from', 'dev', '--env-to', 'prod']):
+        with patch.object(sys, 'argv', ['prog', '--from', 'dev', '--to', 'prod']):
             args = parse_apply_args("Test description")
-            self.assertEqual(args.env_from, 'dev')
-            self.assertEqual(args.env_to, 'prod')
+            self.assertEqual(args.from_env, 'dev')
+            self.assertEqual(args.to_env, 'prod')
             self.assertIsNone(args.env)
 
     def test_parse_apply_with_schema_dir(self):
@@ -145,7 +145,7 @@ class TestSetupClient(unittest.TestCase):
         self.assertEqual(call_args['schema_dir'], str(Path('/test/firestore_schema/dev')))
 
         mock_config.display_info.assert_called_once()
-        mock_gcloud.assert_called_once_with(mock_config)
+        mock_gcloud.assert_called_once_with(mock_config, dry_run=False)
 
     @patch('cli.GCloudClient')
     @patch('cli.load_config')

@@ -19,17 +19,17 @@ def _validate_migration_args(parser: argparse.ArgumentParser, args: argparse.Nam
     Raises:
         SystemExit: If validation fails
     """
-    migration_mode = args.env_from and args.env_to
+    migration_mode = args.from_env and args.to_env
     standard_mode = args.env
 
     if migration_mode and standard_mode:
-        parser.error("Cannot use --env-from/--env-to with --env")
+        parser.error("Cannot use --from/--to with --env")
 
     if not migration_mode and not standard_mode:
-        parser.error("Must specify either (--env-from and --env-to) or --env")
+        parser.error("Must specify either (--from and --to) or --env")
 
-    if (args.env_from and not args.env_to) or (args.env_to and not args.env_from):
-        parser.error("Both --env-from and --env-to must be specified for migration mode")
+    if (args.from_env and not args.to_env) or (args.to_env and not args.from_env):
+        parser.error("Both --from and --to must be specified for migration mode")
 
 
 def parse_pull_args(description: str) -> argparse.Namespace:
@@ -88,13 +88,15 @@ def parse_plan_args(description: str) -> argparse.Namespace:
 
     # Environment migration mode
     parser.add_argument(
-        "--env-from",
+        "--from",
         metavar="SOURCE",
+        dest="from_env",
         help="Source environment (migration mode: compare SOURCE local schema)"
     )
     parser.add_argument(
-        "--env-to",
+        "--to",
         metavar="TARGET",
+        dest="to_env",
         help="Target environment (migration mode: compare against TARGET local schema)"
     )
 
@@ -124,7 +126,7 @@ def parse_apply_args(description: str) -> argparse.Namespace:
     Parse command-line arguments for apply command.
 
     Supports two modes:
-    1. Migration mode: --env-from and --env-to (apply source schema to target env)
+    1. Migration mode: --from and --to (apply source schema to target env)
     2. Standard mode: --env (apply local schema to remote)
 
     Args:
@@ -137,13 +139,15 @@ def parse_apply_args(description: str) -> argparse.Namespace:
 
     # Environment migration mode
     parser.add_argument(
-        "--env-from",
+        "--from",
         metavar="SOURCE",
+        dest="from_env",
         help="Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)"
     )
     parser.add_argument(
-        "--env-to",
+        "--to",
         metavar="TARGET",
+        dest="to_env",
         help="Target environment (migration mode: apply SOURCE schema to TARGET Firestore)"
     )
 
@@ -171,6 +175,13 @@ def parse_apply_args(description: str) -> argparse.Namespace:
         help="Skip confirmation prompt (useful for CI/CD)"
     )
 
+    # Dry-run flag (show commands without executing)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show gcloud commands that would be executed without running them"
+    )
+
     args = parser.parse_args()
     _validate_migration_args(parser, args)
     return args
@@ -178,7 +189,8 @@ def parse_apply_args(description: str) -> argparse.Namespace:
 
 def setup_client(
     env: str,
-    schema_dir: Optional[str] = None
+    schema_dir: Optional[str] = None,
+    dry_run: bool = False
 ) -> Tuple[FiresyncConfig, GCloudClient]:
     """
     Set up configuration and GCloud client from workspace environment.
@@ -186,6 +198,7 @@ def setup_client(
     Args:
         env: Environment name from workspace config
         schema_dir: Schema directory path (optional override)
+        dry_run: If True, GCloudClient will show commands without executing
 
     Returns:
         Tuple of (config, client)
@@ -224,5 +237,5 @@ def setup_client(
     )
 
     config.display_info()
-    client = GCloudClient(config)
+    client = GCloudClient(config, dry_run=dry_run)
     return config, client

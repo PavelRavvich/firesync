@@ -66,8 +66,8 @@ def create_parser():
         help='Compare local vs remote schema',
         description='Compare local Firestore schema against remote state or between environments'
     )
-    plan_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: compare SOURCE local schema)')
-    plan_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: compare against TARGET local schema)')
+    plan_parser.add_argument('--from', metavar='SOURCE', dest='from_env', help='Source environment (migration mode: compare SOURCE local schema)')
+    plan_parser.add_argument('--to', metavar='TARGET', dest='to_env', help='Target environment (migration mode: compare against TARGET local schema)')
     plan_parser.add_argument('--env', '-e', metavar='NAME', help='Compare local schema against remote Firestore (e.g., dev, staging, prod)')
     plan_parser.add_argument('--schema-dir', '-d', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
 
@@ -77,11 +77,12 @@ def create_parser():
         help='Apply local schema to Firestore',
         description='Apply local Firestore schema to remote GCP project or migrate between environments'
     )
-    apply_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)')
-    apply_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: apply SOURCE schema to TARGET Firestore)')
+    apply_parser.add_argument('--from', metavar='SOURCE', dest='from_env', help='Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)')
+    apply_parser.add_argument('--to', metavar='TARGET', dest='to_env', help='Target environment (migration mode: apply SOURCE schema to TARGET Firestore)')
     apply_parser.add_argument('--env', '-e', metavar='NAME', help='Apply local schema to remote Firestore (e.g., dev, staging, prod)')
     apply_parser.add_argument('--schema-dir', '-d', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
     apply_parser.add_argument('--auto-approve', '-y', action='store_true', help='Skip confirmation prompt (useful for CI/CD)')
+    apply_parser.add_argument('--dry-run', action='store_true', help='Show gcloud commands that would be executed without running them')
 
     return parser
 
@@ -134,8 +135,8 @@ def main():
 
     elif args.command == 'plan':
         cmd.append('commands.plan')
-        if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
-            cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
+        if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
+            cmd.extend(['--from', args.from_env, '--to', args.to_env])
         elif hasattr(args, 'env') and args.env:
             cmd.extend(['--env', args.env])
         if hasattr(args, 'schema_dir') and args.schema_dir:
@@ -143,14 +144,16 @@ def main():
 
     elif args.command == 'apply':
         cmd.append('commands.apply')
-        if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
-            cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
+        if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
+            cmd.extend(['--from', args.from_env, '--to', args.to_env])
         elif hasattr(args, 'env') and args.env:
             cmd.extend(['--env', args.env])
         if hasattr(args, 'schema_dir') and args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
         if hasattr(args, 'auto_approve') and args.auto_approve:
             cmd.append('--auto-approve')
+        if hasattr(args, 'dry_run') and args.dry_run:
+            cmd.append('--dry-run')
 
     # Execute the command with environment variables
     result = subprocess.run(cmd, env=env)

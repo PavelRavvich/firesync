@@ -26,16 +26,18 @@ def get_gcloud_binary() -> str:
 class GCloudClient:
     """Client for executing gcloud commands."""
 
-    def __init__(self, config: FiresyncConfig):
+    def __init__(self, config: FiresyncConfig, dry_run: bool = False):
         """
         Initialize GCloud client.
 
         Args:
             config: FiresyncConfig instance with project and authentication details
+            dry_run: If True, show commands without executing them
         """
         self.config = config
         self.gcloud_bin = get_gcloud_binary()
         self._authenticated = False
+        self.dry_run = dry_run
 
     def activate_service_account(self) -> None:
         """
@@ -133,13 +135,18 @@ class GCloudClient:
         Returns:
             True if successful, False if failed
         """
-        self.activate_service_account()
-
         full_cmd = [self.gcloud_bin] + cmd + [f"--project={self.config.project_id}"]
 
         if quiet:
             full_cmd.append("--quiet")
 
+        # Dry-run mode: just show the command
+        if self.dry_run:
+            print(f"[DRY-RUN] {' '.join(full_cmd)}")
+            logger.info(f"Dry-run: {' '.join(full_cmd)}")
+            return True
+
+        self.activate_service_account()
         logger.debug(f"Running: {' '.join(full_cmd)}")
 
         result = subprocess.run(full_cmd, capture_output=True, text=True)

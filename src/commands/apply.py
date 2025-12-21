@@ -207,8 +207,8 @@ def main():
     """Main entry point for firestore_apply command."""
     args = parse_apply_args("Apply local Firestore schema to remote GCP project")
 
-    # Check if migration mode (--env-from and --env-to)
-    if args.env_from and args.env_to:
+    # Check if migration mode (--from and --to)
+    if args.from_env and args.to_env:
         # Migration mode: apply source schema to target environment
         try:
             workspace_config = load_config()
@@ -217,43 +217,52 @@ def main():
             sys.exit(1)
 
         # Get source schema directory
-        source_schema_dir = workspace_config.get_schema_dir(args.env_from)
+        source_schema_dir = workspace_config.get_schema_dir(args.from_env)
 
-        print(f"\n🚀 Migration: {args.env_from} → {args.env_to}")
+        print(f"\n🚀 Migration: {args.from_env} → {args.to_env}")
         print(f"   Source schema: {source_schema_dir}")
 
         # Set up client for target environment
-        _, target_client = setup_client(env=args.env_to)
+        dry_run = getattr(args, 'dry_run', False)
+        _, target_client = setup_client(env=args.to_env, dry_run=dry_run)
 
-        # Collect changes for confirmation
-        changes = collect_all_diffs(target_client, source_schema_dir)
+        # Collect changes for confirmation (skip if dry-run)
+        if not dry_run:
+            changes = collect_all_diffs(target_client, source_schema_dir)
 
-        # Ask for confirmation
-        auto_approve = getattr(args, 'auto_approve', False)
-        if not confirm_apply(changes, target_client.config.project_id, args.env_to, auto_approve):
-            print("[!] Operation cancelled")
-            sys.exit(0)
+            # Ask for confirmation
+            auto_approve = getattr(args, 'auto_approve', False)
+            if not confirm_apply(changes, target_client.config.project_id, args.to_env, auto_approve):
+                print("[!] Operation cancelled")
+                sys.exit(0)
+        else:
+            print("\n[DRY-RUN] Showing commands that would be executed:\n")
 
         # Apply source schema to target environment
         apply_schema_from_directory(target_client, source_schema_dir)
 
-        print(f"\n[+] Migration applied: {args.env_from} schema -> {args.env_to} Firestore")
+        print(f"\n[+] Migration applied: {args.from_env} schema -> {args.to_env} Firestore")
 
     else:
         # Standard mode: apply local schema to remote
+        dry_run = getattr(args, 'dry_run', False)
         config, client = setup_client(
             env=args.env,
-            schema_dir=getattr(args, 'schema_dir', None)
+            schema_dir=getattr(args, 'schema_dir', None),
+            dry_run=dry_run
         )
 
-        # Collect changes for confirmation
-        changes = collect_all_diffs(client, config.schema_dir)
+        # Collect changes for confirmation (skip if dry-run)
+        if not dry_run:
+            changes = collect_all_diffs(client, config.schema_dir)
 
-        # Ask for confirmation
-        auto_approve = getattr(args, 'auto_approve', False)
-        if not confirm_apply(changes, config.project_id, args.env, auto_approve):
-            print("[!] Operation cancelled")
-            sys.exit(0)
+            # Ask for confirmation
+            auto_approve = getattr(args, 'auto_approve', False)
+            if not confirm_apply(changes, config.project_id, args.env, auto_approve):
+                print("[!] Operation cancelled")
+                sys.exit(0)
+        else:
+            print("\n[DRY-RUN] Showing commands that would be executed:\n")
 
         # Apply changes
         apply_schema_from_directory(client, config.schema_dir)

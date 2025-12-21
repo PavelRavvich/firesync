@@ -104,8 +104,8 @@ def main():
     """Main entry point for firestore_plan command."""
     args = parse_plan_args("Compare local Firestore schema against remote state")
 
-    # Check if migration mode (--env-from and --env-to)
-    if args.env_from and args.env_to:
+    # Check if migration mode (--from and --to)
+    if args.from_env and args.to_env:
         # Migration mode: compare two local schemas
         try:
             workspace_config = load_config()
@@ -114,10 +114,10 @@ def main():
             sys.exit(1)
 
         # Get schema directories for both environments
-        source_schema_dir = workspace_config.get_schema_dir(args.env_from)
-        target_schema_dir = workspace_config.get_schema_dir(args.env_to)
+        source_schema_dir = workspace_config.get_schema_dir(args.from_env)
+        target_schema_dir = workspace_config.get_schema_dir(args.to_env)
 
-        print(f"\nMigration Plan: {args.env_from} -> {args.env_to}")
+        print(f"\nMigration Plan: {args.from_env} -> {args.to_env}")
         print(f"   Source: {source_schema_dir}")
         print(f"   Target: {target_schema_dir}")
 
