@@ -2,7 +2,6 @@
 """Manage FireSync workspace environments."""
 
 import sys
-import logging
 import argparse
 from pathlib import Path
 
@@ -12,13 +11,10 @@ from workspace import (
     add_environment,
     remove_environment,
 )
+from logger import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Configure logging based on environment variables
+logger = setup_logging()
 
 
 def cmd_list(args):
@@ -226,7 +222,7 @@ def main():
         description='Remove an environment from config.yaml. Requires confirmation unless --force is used.'
     )
     remove_parser.add_argument('name', help='Environment name to remove')
-    remove_parser.add_argument('--force', action='store_true', help='Skip confirmation prompt')
+    remove_parser.add_argument('--force', '-f', action='store_true', help='Skip confirmation prompt')
     remove_parser.set_defaults(func=cmd_remove)
 
     args = parser.parse_args()

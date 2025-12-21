@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Compare local Firestore schema against remote state."""
 
-import logging
 import sys
 from typing import Callable, List, Any, Dict
 from pathlib import Path
@@ -15,13 +14,10 @@ from operations import (
 )
 from schema import SchemaFile, load_schema_file
 from workspace import load_config
+from logger import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Configure logging based on environment variables
+logger = setup_logging()
 
 
 def compare_and_display(

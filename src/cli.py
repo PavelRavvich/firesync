@@ -54,6 +54,7 @@ def parse_pull_args(description: str) -> argparse.Namespace:
     # Pull all environments
     auth_group.add_argument(
         "--all",
+        "-a",
         action="store_true",
         help="Export schemas from all environments defined in config.yaml"
     )
@@ -61,6 +62,7 @@ def parse_pull_args(description: str) -> argparse.Namespace:
     # Single environment
     auth_group.add_argument(
         "--env",
+        "-e",
         metavar="NAME",
         help="Export schema from specific environment (e.g., dev, staging, prod)"
     )
@@ -99,6 +101,7 @@ def parse_plan_args(description: str) -> argparse.Namespace:
     # Standard mode - single environment
     parser.add_argument(
         "--env",
+        "-e",
         metavar="NAME",
         help="Compare local schema against remote Firestore (e.g., dev, staging, prod)"
     )
@@ -106,6 +109,7 @@ def parse_plan_args(description: str) -> argparse.Namespace:
     # Schema directory override
     parser.add_argument(
         "--schema-dir",
+        "-d",
         metavar="PATH",
         help="Custom schema directory path (overrides workspace config)"
     )
@@ -146,6 +150,7 @@ def parse_apply_args(description: str) -> argparse.Namespace:
     # Standard mode - single environment
     parser.add_argument(
         "--env",
+        "-e",
         metavar="NAME",
         help="Apply local schema to remote Firestore (e.g., dev, staging, prod)"
     )
@@ -153,8 +158,17 @@ def parse_apply_args(description: str) -> argparse.Namespace:
     # Schema directory override
     parser.add_argument(
         "--schema-dir",
+        "-d",
         metavar="PATH",
         help="Custom schema directory path (overrides workspace config)"
+    )
+
+    # Auto-approve flag (skip confirmation)
+    parser.add_argument(
+        "--auto-approve",
+        "-y",
+        action="store_true",
+        help="Skip confirmation prompt (useful for CI/CD)"
     )
 
     args = parser.parse_args()

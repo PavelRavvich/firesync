@@ -48,7 +48,7 @@ class GCloudClient:
             return
 
         logger.info(f"Activating service account: {self.config.service_account}")
-        print(f"[~] Activating {self.config.service_account} for project {self.config.project_id}")
+        logger.info(f"Project: {self.config.project_id}")
 
         cmd = [
             self.gcloud_bin,
@@ -58,6 +58,8 @@ class GCloudClient:
             f"--key-file={self.config.key_path}",
             f"--project={self.config.project_id}"
         ]
+
+        logger.debug(f"Running: {' '.join(cmd)}")
 
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -138,7 +140,6 @@ class GCloudClient:
         if quiet:
             full_cmd.append("--quiet")
 
-        print(f"[~] {' '.join(full_cmd)}")
         logger.debug(f"Running: {' '.join(full_cmd)}")
 
         result = subprocess.run(full_cmd, capture_output=True, text=True)

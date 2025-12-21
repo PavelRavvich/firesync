@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """Export Firestore schema from GCP to local JSON files."""
 
-import logging
 import sys
 
 from cli import parse_pull_args, setup_client
 from schema import SchemaFile, ensure_schema_dir
 from workspace import load_config
+from logger import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Configure logging based on environment variables
+logger = setup_logging()
 
 
 def pull_single_environment(env_name):

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Apply local Firestore schema to remote GCP project."""
 
-import logging
 import sys
 from typing import Callable, List, Dict, Any
+from pathlib import Path
 
 from cli import parse_apply_args, setup_client
 from gcloud import GCloudClient
@@ -14,13 +14,11 @@ from operations import (
 )
 from schema import SchemaFile, load_schema_file
 from workspace import load_config
+from ui import confirm_apply, calculate_changes
+from logger import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Configure logging based on environment variables
+logger = setup_logging()
 
 
 def apply_resources(
@@ -53,7 +51,62 @@ def apply_resources(
     return success_count
 
 
-def apply_schema_from_directory(client: GCloudClient, schema_dir):
+def collect_all_diffs(client: GCloudClient, schema_dir: Path) -> Dict[str, int]:
+    """
+    Collect all differences between local and remote schemas.
+
+    Args:
+        client: GCloud client configured for target environment
+        schema_dir: Path to schema directory
+
+    Returns:
+        Dictionary with counts of create/delete/update operations
+    """
+    total_changes = {"create": 0, "delete": 0, "update": 0}
+
+    # Composite Indexes
+    try:
+        local_composite = load_schema_file(schema_dir / SchemaFile.COMPOSITE_INDEXES)
+        remote_composite = client.list_composite_indexes()
+        diff = CompositeIndexOperations.compare(local_composite, remote_composite)
+        changes = calculate_changes(diff)
+        for key in total_changes:
+            total_changes[key] += changes.get(key, 0)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        logger.warning(f"Error comparing composite indexes: {e}")
+
+    # Field Indexes
+    try:
+        local_fields = load_schema_file(schema_dir / SchemaFile.FIELD_INDEXES)
+        remote_fields = client.list_field_indexes()
+        diff = FieldIndexOperations.compare(local_fields, remote_fields)
+        changes = calculate_changes(diff)
+        for key in total_changes:
+            total_changes[key] += changes.get(key, 0)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        logger.warning(f"Error comparing field indexes: {e}")
+
+    # TTL Policies
+    try:
+        local_ttl = load_schema_file(schema_dir / SchemaFile.TTL_POLICIES)
+        remote_ttl = client.list_ttl_policies()
+        diff = TTLPolicyOperations.compare(local_ttl, remote_ttl)
+        changes = calculate_changes(diff)
+        for key in total_changes:
+            total_changes[key] += changes.get(key, 0)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        logger.warning(f"Error comparing TTL policies: {e}")
+
+    return total_changes
+
+
+def apply_schema_from_directory(client: GCloudClient, schema_dir: Path):
     """
     Apply all schemas from a directory to Firestore.
 
@@ -172,6 +225,15 @@ def main():
         # Set up client for target environment
         _, target_client = setup_client(env=args.env_to)
 
+        # Collect changes for confirmation
+        changes = collect_all_diffs(target_client, source_schema_dir)
+
+        # Ask for confirmation
+        auto_approve = getattr(args, 'auto_approve', False)
+        if not confirm_apply(changes, target_client.config.project_id, args.env_to, auto_approve):
+            print("[!] Operation cancelled")
+            sys.exit(0)
+
         # Apply source schema to target environment
         apply_schema_from_directory(target_client, source_schema_dir)
 
@@ -184,6 +246,16 @@ def main():
             schema_dir=getattr(args, 'schema_dir', None)
         )
 
+        # Collect changes for confirmation
+        changes = collect_all_diffs(client, config.schema_dir)
+
+        # Ask for confirmation
+        auto_approve = getattr(args, 'auto_approve', False)
+        if not confirm_apply(changes, config.project_id, args.env, auto_approve):
+            print("[!] Operation cancelled")
+            sys.exit(0)
+
+        # Apply changes
         apply_schema_from_directory(client, config.schema_dir)
 
         print("\n✔️ Firestore schema applied.")

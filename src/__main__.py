@@ -19,6 +19,21 @@ def create_parser():
         version='firesync 0.1.0'
     )
 
+    # Global flags
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        action='store_true',
+        help='Enable verbose output (show debug logs and gcloud commands)'
+    )
+
+    parser.add_argument(
+        '--quiet',
+        '-q',
+        action='store_true',
+        help='Minimize output (show only errors and final results)'
+    )
+
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Init command
@@ -42,8 +57,8 @@ def create_parser():
         description='Export Firestore schema from GCP to local JSON files'
     )
     pull_key_group = pull_parser.add_mutually_exclusive_group(required=True)
-    pull_key_group.add_argument('--all', action='store_true', help='Export schemas from all environments defined in config.yaml')
-    pull_key_group.add_argument('--env', metavar='NAME', help='Export schema from specific environment (e.g., dev, staging, prod)')
+    pull_key_group.add_argument('--all', '-a', action='store_true', help='Export schemas from all environments defined in config.yaml')
+    pull_key_group.add_argument('--env', '-e', metavar='NAME', help='Export schema from specific environment (e.g., dev, staging, prod)')
 
     # Plan command
     plan_parser = subparsers.add_parser(
@@ -53,8 +68,8 @@ def create_parser():
     )
     plan_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: compare SOURCE local schema)')
     plan_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: compare against TARGET local schema)')
-    plan_parser.add_argument('--env', metavar='NAME', help='Compare local schema against remote Firestore (e.g., dev, staging, prod)')
-    plan_parser.add_argument('--schema-dir', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
+    plan_parser.add_argument('--env', '-e', metavar='NAME', help='Compare local schema against remote Firestore (e.g., dev, staging, prod)')
+    plan_parser.add_argument('--schema-dir', '-d', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
 
     # Apply command
     apply_parser = subparsers.add_parser(
@@ -64,18 +79,30 @@ def create_parser():
     )
     apply_parser.add_argument('--env-from', metavar='SOURCE', help='Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)')
     apply_parser.add_argument('--env-to', metavar='TARGET', help='Target environment (migration mode: apply SOURCE schema to TARGET Firestore)')
-    apply_parser.add_argument('--env', metavar='NAME', help='Apply local schema to remote Firestore (e.g., dev, staging, prod)')
-    apply_parser.add_argument('--schema-dir', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
+    apply_parser.add_argument('--env', '-e', metavar='NAME', help='Apply local schema to remote Firestore (e.g., dev, staging, prod)')
+    apply_parser.add_argument('--schema-dir', '-d', metavar='PATH', help='Custom schema directory path (overrides workspace config)')
+    apply_parser.add_argument('--auto-approve', '-y', action='store_true', help='Skip confirmation prompt (useful for CI/CD)')
 
     return parser
 
 
 def main():
     """Main CLI entry point."""
+    import os
+
     # Special handling for 'env' command - pass through directly
     if len(sys.argv) > 1 and sys.argv[1] == 'env':
-        cmd = ['python3', '-m', 'commands.env'] + sys.argv[2:]
-        result = subprocess.run(cmd)
+        # Set up environment variables for global flags
+        env = os.environ.copy()
+        if '--verbose' in sys.argv or '-v' in sys.argv:
+            env['FIRESYNC_VERBOSE'] = '1'
+        if '--quiet' in sys.argv or '-q' in sys.argv:
+            env['FIRESYNC_QUIET'] = '1'
+
+        # Remove global flags from argv before passing to subcommand
+        filtered_args = [arg for arg in sys.argv[2:] if arg not in ('--verbose', '-v', '--quiet', '-q')]
+        cmd = ['python3', '-m', 'commands.env'] + filtered_args
+        result = subprocess.run(cmd, env=env)
         sys.exit(result.returncode)
 
     parser = create_parser()
@@ -84,6 +111,13 @@ def main():
     if not args.command:
         parser.print_help()
         sys.exit(1)
+
+    # Set up environment variables for global flags
+    env = os.environ.copy()
+    if args.verbose:
+        env['FIRESYNC_VERBOSE'] = '1'
+    if args.quiet:
+        env['FIRESYNC_QUIET'] = '1'
 
     # Build command
     cmd = ['python3', '-m']
@@ -115,9 +149,11 @@ def main():
             cmd.extend(['--env', args.env])
         if hasattr(args, 'schema_dir') and args.schema_dir:
             cmd.extend(['--schema-dir', args.schema_dir])
+        if hasattr(args, 'auto_approve') and args.auto_approve:
+            cmd.append('--auto-approve')
 
-    # Execute the command
-    result = subprocess.run(cmd)
+    # Execute the command with environment variables
+    result = subprocess.run(cmd, env=env)
     sys.exit(result.returncode)
 
 
