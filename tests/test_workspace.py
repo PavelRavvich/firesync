@@ -26,15 +26,15 @@ from workspace import (
 class TestEnvironmentConfig(unittest.TestCase):
     """Tests for EnvironmentConfig dataclass."""
 
-    def test_valid_with_key_path(self):
-        """Test creating environment config with key_path."""
+    def test_valid_with_key_file(self):
+        """Test creating environment config with key_file."""
         env = EnvironmentConfig(
             name="production",
-            key_path="keys/prod.json",
+            key_file="keys/prod.json",
             description="Production environment"
         )
         self.assertEqual(env.name, "production")
-        self.assertEqual(env.key_path, "keys/prod.json")
+        self.assertEqual(env.key_file, "keys/prod.json")
         self.assertIsNone(env.key_env)
         self.assertEqual(env.description, "Production environment")
 
@@ -45,22 +45,22 @@ class TestEnvironmentConfig(unittest.TestCase):
             key_env="GCP_STAGING_KEY"
         )
         self.assertEqual(env.name, "staging")
-        self.assertIsNone(env.key_path)
+        self.assertIsNone(env.key_file)
         self.assertEqual(env.key_env, "GCP_STAGING_KEY")
 
-    def test_both_key_path_and_key_env_raises_error(self):
-        """Test that specifying both key_path and key_env raises ValueError."""
+    def test_both_key_file_and_key_env_raises_error(self):
+        """Test that specifying both key_file and key_env raises ValueError."""
         with self.assertRaises(ValueError) as ctx:
             EnvironmentConfig(
                 name="invalid",
-                key_path="keys/prod.json",
+                key_file="keys/prod.json",
                 key_env="GCP_KEY"
             )
         self.assertIn("cannot specify both", str(ctx.exception))
         self.assertIn("invalid", str(ctx.exception))
 
-    def test_neither_key_path_nor_key_env_raises_error(self):
-        """Test that omitting both key_path and key_env raises ValueError."""
+    def test_neither_key_file_nor_key_env_raises_error(self):
+        """Test that omitting both key_file and key_env raises ValueError."""
         with self.assertRaises(ValueError) as ctx:
             EnvironmentConfig(name="invalid")
         self.assertIn("must specify either", str(ctx.exception))
@@ -72,7 +72,7 @@ class TestWorkspaceConfig(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.env1 = EnvironmentConfig(name="prod", key_path="keys/prod.json")
+        self.env1 = EnvironmentConfig(name="prod", key_file="keys/prod.json")
         self.env2 = EnvironmentConfig(name="staging", key_env="GCP_STAGING_KEY")
         self.config = WorkspaceConfig(
             version=1,
@@ -200,7 +200,7 @@ class TestLoadConfig(unittest.TestCase):
 version: 1
 environments:
   production:
-    key_path: keys/prod.json
+    key_file: keys/prod.json
     description: "Production environment"
   staging:
     key_env: GCP_STAGING_KEY
@@ -218,13 +218,13 @@ settings:
 
         # Check production environment
         prod = config.environments["production"]
-        self.assertEqual(prod.key_path, "keys/prod.json")
+        self.assertEqual(prod.key_file, "keys/prod.json")
         self.assertIsNone(prod.key_env)
         self.assertEqual(prod.description, "Production environment")
 
         # Check staging environment
         staging = config.environments["staging"]
-        self.assertIsNone(staging.key_path)
+        self.assertIsNone(staging.key_file)
         self.assertEqual(staging.key_env, "GCP_STAGING_KEY")
 
     def test_load_config_minimal(self):
@@ -233,7 +233,7 @@ settings:
 version: 1
 environments:
   dev:
-    key_path: dev.json
+    key_file: dev.json
 settings:
   schema_dir: my_schemas
 """)
@@ -249,7 +249,7 @@ settings:
 version: 1
 environments:
   dev:
-    key_path: dev.json
+    key_file: dev.json
 settings: {}
 """)
         config = load_config(self.config_path)
@@ -324,22 +324,22 @@ settings:
         self.assertIn("Environment 'prod' must be a dictionary", str(ctx.exception))
 
     def test_load_config_environment_both_keys(self):
-        """Test that ValueError is raised if environment has both key_path and key_env."""
+        """Test that ValueError is raised if environment has both key_file and key_env."""
         self.write_config("""
 version: 1
 environments:
   prod:
-    key_path: keys/prod.json
+    key_file: keys/prod.json
     key_env: GCP_PROD_KEY
 settings:
   schema_dir: schemas
 """)
         with self.assertRaises(ValueError) as ctx:
             load_config(self.config_path)
-        self.assertIn("cannot specify both key_path and key_env", str(ctx.exception))
+        self.assertIn("cannot specify both key_file and key_env", str(ctx.exception))
 
     def test_load_config_environment_no_keys(self):
-        """Test that ValueError is raised if environment has neither key_path nor key_env."""
+        """Test that ValueError is raised if environment has neither key_file nor key_env."""
         self.write_config("""
 version: 1
 environments:
@@ -350,7 +350,7 @@ settings:
 """)
         with self.assertRaises(ValueError) as ctx:
             load_config(self.config_path)
-        self.assertIn("must specify either key_path or key_env", str(ctx.exception))
+        self.assertIn("must specify either key_file or key_env", str(ctx.exception))
 
     def test_load_config_settings_not_dict(self):
         """Test that ValueError is raised if settings is not a dict."""
@@ -358,7 +358,7 @@ settings:
 version: 1
 environments:
   dev:
-    key_path: dev.json
+    key_file: dev.json
 settings: "string value"
 """)
         with self.assertRaises(ValueError) as ctx:
@@ -371,7 +371,7 @@ settings: "string value"
 version: 1
 environments:
   dev:
-    key_path: dev.json
+    key_file: dev.json
 settings:
   schema_dir: 123
 """)
@@ -388,7 +388,7 @@ settings:
 version: 1
 environments:
   dev:
-    key_path: dev.json
+    key_file: dev.json
 settings:
   schema_dir: schemas
 """)

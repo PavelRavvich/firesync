@@ -115,20 +115,25 @@ Add a new environment to the workspace.
 - `<name>` - Environment name (positional argument, e.g., dev, staging, prod)
 
 **Required flags (one of):**
-- `--key-path <path>` - Path to GCP service account key file (relative to config.yaml)
-- `--key-env <var>` - Environment variable name containing GCP key JSON
+- `--key-file <path>` - Path to GCP service account key file (relative to config.yaml)
+- `--key-env <var>` - Environment variable name containing GCP key JSON or path to key file (auto-detected)
 
 **Optional flags:**
 - `--description <text>` - Optional description of the environment
 
 **Examples:**
 ```bash
-# Using key file
-firesync env add dev --key-path ../secrets/gcp-key-dev.json
-firesync env add prod --key-path ../secrets/gcp-key-prod.json --description "Production environment"
+# Using key file directly
+firesync env add dev --key-file ../secrets/gcp-key-dev.json
+firesync env add prod --key-file ../secrets/gcp-key-prod.json --description "Production environment"
 
-# Using environment variable
+# Using environment variable with JSON
+export GCP_STAGING_KEY='{"type": "service_account", "project_id": "..."}'
 firesync env add staging --key-env GCP_STAGING_KEY --description "Staging environment"
+
+# Using environment variable with file path (auto-detected)
+export PROD_KEY_PATH="/secrets/prod.json"
+firesync env add prod2 --key-env PROD_KEY_PATH --description "Production (via env var path)"
 ```
 
 ---

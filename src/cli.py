@@ -212,13 +212,13 @@ def setup_client(
     env_config = workspace_config.get_env(env)
 
     # Determine key parameters from environment config
-    if env_config.key_path:
-        # Resolve key_path relative to config.yaml location
-        resolved_key_path = workspace_config.config_dir / env_config.key_path
-        actual_key_path = str(resolved_key_path)
+    if env_config.key_file:
+        # Resolve key_file relative to config.yaml location
+        resolved_key_file = workspace_config.config_dir / env_config.key_file
+        actual_key_file = str(resolved_key_file)
         actual_key_env = None
     else:
-        actual_key_path = None
+        actual_key_file = None
         actual_key_env = env_config.key_env
 
     # Determine schema_dir
@@ -231,7 +231,7 @@ def setup_client(
 
     # Create config
     config = FiresyncConfig.from_args(
-        key_path=actual_key_path,
+        key_file=actual_key_file,
         key_env=actual_key_env,
         schema_dir=actual_schema_dir
     )

@@ -52,7 +52,7 @@ def main():
 
         if not workspace_config.environments:
             print("[!] No environments configured in workspace")
-            print("    Run 'firesync env add <name> --key-path=<path>' to add an environment")
+            print("    Run 'firesync env add <name> --key-file=<path>' to add an environment")
             sys.exit(1)
 
         env_count = len(workspace_config.environments)

@@ -112,12 +112,12 @@ class TestSetupClient(unittest.TestCase):
     @patch('cli.GCloudClient')
     @patch('cli.load_config')
     @patch('config.FiresyncConfig.from_args')
-    def test_setup_client_with_key_path(self, mock_from_args, mock_load_config, mock_gcloud):
-        """Test setup_client with key_path configuration."""
+    def test_setup_client_with_key_file(self, mock_from_args, mock_load_config, mock_gcloud):
+        """Test setup_client with key_file configuration."""
         # Setup mock workspace config
         env_config = EnvironmentConfig(
             name='dev',
-            key_path='secrets/key.json',
+            key_file='secrets/key.json',
             key_env=None,
             description=None
         )
@@ -140,7 +140,7 @@ class TestSetupClient(unittest.TestCase):
 
         # Check call arguments (convert paths to strings for cross-platform compatibility)
         call_args = mock_from_args.call_args[1]
-        self.assertEqual(call_args['key_path'], str(Path('/test/secrets/key.json')))
+        self.assertEqual(call_args['key_file'], str(Path('/test/secrets/key.json')))
         self.assertIsNone(call_args['key_env'])
         self.assertEqual(call_args['schema_dir'], str(Path('/test/firestore_schema/dev')))
 
@@ -155,7 +155,7 @@ class TestSetupClient(unittest.TestCase):
         # Setup mock workspace config
         env_config = EnvironmentConfig(
             name='staging',
-            key_path=None,
+            key_file=None,
             key_env='GCP_KEY',
             description=None
         )
@@ -174,7 +174,7 @@ class TestSetupClient(unittest.TestCase):
 
         # Verify (convert paths to strings for cross-platform compatibility)
         call_args = mock_from_args.call_args[1]
-        self.assertIsNone(call_args['key_path'])
+        self.assertIsNone(call_args['key_file'])
         self.assertEqual(call_args['key_env'], 'GCP_KEY')
         self.assertEqual(call_args['schema_dir'], str(Path('/project/firestore_schema/staging')))
 
@@ -186,7 +186,7 @@ class TestSetupClient(unittest.TestCase):
         # Setup mock workspace config
         env_config = EnvironmentConfig(
             name='dev',
-            key_path=None,
+            key_file=None,
             key_env='GCP_KEY',
             description=None
         )
@@ -204,7 +204,7 @@ class TestSetupClient(unittest.TestCase):
 
         # Verify schema_dir override is used
         mock_from_args.assert_called_once_with(
-            key_path=None,
+            key_file=None,
             key_env='GCP_KEY',
             schema_dir='/custom/schemas'
         )
@@ -278,7 +278,7 @@ class TestNewCLIFeatures(unittest.TestCase):
         # Setup mocks
         env_config = EnvironmentConfig(
             name='dev',
-            key_path='secrets/key.json',
+            key_file='secrets/key.json',
             key_env=None,
             description=None
         )

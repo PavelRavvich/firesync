@@ -97,8 +97,8 @@ Get help on any command:
 
 2. Add your environments:
 ```bash
-./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
-./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
+./firesync env add dev --key-file=./secrets/gcp-key-dev.json --description="Development environment"
+./firesync env add staging --key-file=./secrets/gcp-key-staging.json --description="Staging environment"
 ./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
 ```
 
@@ -169,19 +169,24 @@ Add a new environment to workspace.
 - `<name>` - Environment name (positional, e.g., dev, staging, prod)
 
 **Required flags (one of):**
-- `--key-path <path>` - Path to GCP service account key file
-- `--key-env <var>` - Environment variable containing GCP key JSON
+- `--key-file <path>` - Path to GCP service account key file
+- `--key-env <var>` - Environment variable containing GCP key JSON or path to key file (auto-detected)
 
 **Optional flags:**
 - `--description <text>` - Environment description
 
 ```bash
-# Using key file
-firesync env add dev --key-path ../secrets/gcp-key-dev.json
-firesync env add prod --key-path ../secrets/prod.json --description "Production environment"
+# Using key file directly
+firesync env add dev --key-file ../secrets/gcp-key-dev.json
+firesync env add prod --key-file ../secrets/prod.json --description "Production environment"
 
-# Using environment variable
+# Using environment variable with JSON
+export GCP_STAGING_KEY='{"type": "service_account", "project_id": "..."}'
 firesync env add staging --key-env GCP_STAGING_KEY --description "Staging"
+
+# Using environment variable with file path
+export GCP_PROD_KEY_PATH="/secrets/prod.json"
+firesync env add prod --key-env GCP_PROD_KEY_PATH --description "Production"
 ```
 
 ---
@@ -369,10 +374,10 @@ schema_base_dir: firestore_schema
 
 environments:
   dev:
-    key_path: secrets/gcp-key-dev.json
+    key_file: secrets/gcp-key-dev.json
     schema_dir: dev
   staging:
-    key_path: secrets/gcp-key-staging.json
+    key_file: secrets/gcp-key-staging.json
     schema_dir: staging
   prod:
     key_env: GCP_PROD_KEY
@@ -383,8 +388,8 @@ environments:
 - `version` - Config format version (always 1)
 - `schema_base_dir` - Base directory for all schema files
 - `environments` - Map of environment configurations
-  - `key_path` - Path to GCP service account key (relative to config.yaml)
-  - `key_env` - Name of environment variable containing key JSON
+  - `key_file` - Path to GCP service account key (relative to config.yaml)
+  - `key_env` - Name of environment variable containing key JSON or path to key file (auto-detected)
   - `schema_dir` - Schema directory name (relative to schema_base_dir)
 
 ## Usage Examples
@@ -396,7 +401,7 @@ environments:
 ./firesync init
 
 # 2. Add environment
-./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
+./firesync env add dev --key-file=./secrets/gcp-key-dev.json --description="Development environment"
 
 # 3. Pull current schema
 ./firesync pull --env=dev
@@ -422,8 +427,8 @@ Manage dev, staging, and production environments separately:
 ```bash
 # Set up all environments
 ./firesync init
-./firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
-./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
+./firesync env add dev --key-file=./secrets/gcp-key-dev.json --description="Development environment"
+./firesync env add staging --key-file=./secrets/gcp-key-staging.json --description="Staging environment"
 ./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
 
 # Pull schemas from all environments
@@ -794,7 +799,7 @@ Ensure your service account has these IAM roles:
 
 ```bash
 # Pull schema first if firestore_schema/ is empty
-./firesync pull --key-path=./gcp-key.json
+./firesync pull --key-file=./gcp-key.json
 ```
 
 ## Contributing

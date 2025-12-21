@@ -57,7 +57,7 @@ class GCloudClient:
             "auth",
             "activate-service-account",
             self.config.service_account,
-            f"--key-file={self.config.key_path}",
+            f"--key-file={self.config.key_file}",
             f"--project={self.config.project_id}"
         ]
 

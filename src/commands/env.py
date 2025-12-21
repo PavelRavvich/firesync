@@ -24,7 +24,7 @@ def cmd_list(args):
 
         if not config.environments:
             print("No environments configured.")
-            print(f"\nRun 'firesync env add <name> --key-path=<path>' to add an environment.")
+            print(f"\nRun 'firesync env add <name> --key-file=<path>' to add an environment.")
             return
 
         print(f"\nEnvironments in {config.config_path}:\n")
@@ -32,10 +32,10 @@ def cmd_list(args):
             desc = f" - {env_config.description}" if env_config.description else ""
             print(f"  • {env_name}")
 
-            if env_config.key_path:
+            if env_config.key_file:
                 # Show relative path and absolute path in parentheses
-                abs_path = config.config_dir / env_config.key_path
-                print(f"    key_path: {env_config.key_path}{desc} ({abs_path})")
+                abs_path = config.config_dir / env_config.key_file
+                print(f"    key_file: {env_config.key_file}{desc} ({abs_path})")
             else:
                 print(f"    key_env: {env_config.key_env}{desc}")
 
@@ -59,11 +59,11 @@ def cmd_show(args):
 
         print(f"\nEnvironment: {args.name}\n")
 
-        if env_config.key_path:
-            print(f"  Authentication: key_path")
-            print(f"  Key file:       {env_config.key_path}")
+        if env_config.key_file:
+            print(f"  Authentication: key_file")
+            print(f"  Key file:       {env_config.key_file}")
             # Show absolute path
-            abs_path = config.config_dir / env_config.key_path
+            abs_path = config.config_dir / env_config.key_file
             print(f"  Absolute path:  {abs_path}")
         else:
             print(f"  Authentication: key_env")
@@ -96,17 +96,17 @@ def cmd_show(args):
 def cmd_add(args):
     """Add a new environment."""
     try:
-        # Validate that exactly one of key_path or key_env is provided
-        if args.key_path and args.key_env:
-            print("[!] Cannot specify both --key-path and --key-env")
+        # Validate that exactly one of key_file or key_env is provided
+        if args.key_file and args.key_env:
+            print("[!] Cannot specify both --key-file and --key-env")
             sys.exit(1)
-        if not args.key_path and not args.key_env:
-            print("[!] Must specify either --key-path or --key-env")
+        if not args.key_file and not args.key_env:
+            print("[!] Must specify either --key-file or --key-env")
             sys.exit(1)
 
         add_environment(
             env_name=args.name,
-            key_path=args.key_path,
+            key_file=args.key_file,
             key_env=args.key_env,
             description=args.description
         )
@@ -117,8 +117,8 @@ def cmd_add(args):
         config = load_config()
         env_config = config.get_env(args.name)
 
-        if env_config.key_path:
-            print(f"   Key path: {env_config.key_path}")
+        if env_config.key_file:
+            print(f"   Key file: {env_config.key_file}")
         else:
             print(f"   Key env:  {env_config.key_env}")
 
@@ -150,8 +150,8 @@ def cmd_remove(args):
             env_config = config.get_env(args.name)
 
             print(f"\nAre you sure you want to remove environment '{args.name}'?")
-            if env_config.key_path:
-                print(f"  Key path: {env_config.key_path}")
+            if env_config.key_file:
+                print(f"  Key file: {env_config.key_file}")
             else:
                 print(f"  Key env:  {env_config.key_env}")
 
@@ -206,12 +206,12 @@ def main():
     add_parser = subparsers.add_parser(
         'add',
         help='Add new environment to workspace',
-        description='Add a new environment to config.yaml. Requires either --key-path or --key-env for GCP authentication.'
+        description='Add a new environment to config.yaml. Requires either --key-file or --key-env for GCP authentication.'
     )
     add_parser.add_argument('name', help='Environment name (e.g., dev, staging, prod)')
     add_key_group = add_parser.add_mutually_exclusive_group(required=True)
-    add_key_group.add_argument('--key-path', help='Path to GCP service account key file (relative to config.yaml)')
-    add_key_group.add_argument('--key-env', help='Environment variable name containing GCP key JSON')
+    add_key_group.add_argument('--key-file', help='Path to GCP service account key file (relative to config.yaml)')
+    add_key_group.add_argument('--key-env', help='Environment variable name containing GCP key JSON or path to key file')
     add_parser.add_argument('--description', help='Optional description of the environment')
     add_parser.set_defaults(func=cmd_add)
 

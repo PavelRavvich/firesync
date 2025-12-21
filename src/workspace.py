@@ -23,19 +23,19 @@ CONFIG_FILE_NAME = "config.yaml"
 class EnvironmentConfig:
     """Configuration for a single environment."""
     name: str
-    key_path: Optional[str] = None
+    key_file: Optional[str] = None
     key_env: Optional[str] = None
     description: Optional[str] = None
 
     def __post_init__(self):
-        """Validate that exactly one of key_path or key_env is set."""
-        if self.key_path and self.key_env:
+        """Validate that exactly one of key_file or key_env is set."""
+        if self.key_file and self.key_env:
             raise ValueError(
-                f"Environment '{self.name}': cannot specify both key_path and key_env"
+                f"Environment '{self.name}': cannot specify both key_file and key_env"
             )
-        if not self.key_path and not self.key_env:
+        if not self.key_file and not self.key_env:
             raise ValueError(
-                f"Environment '{self.name}': must specify either key_path or key_env"
+                f"Environment '{self.name}': must specify either key_file or key_env"
             )
 
 
@@ -180,7 +180,7 @@ def load_config(config_path: Optional[Path] = None) -> WorkspaceConfig:
 
         env_config = EnvironmentConfig(
             name=env_name,
-            key_path=env_data.get('key_path'),
+            key_file=env_data.get('key_file'),
             key_env=env_data.get('key_env'),
             description=env_data.get('description')
         )
@@ -247,7 +247,7 @@ def init_workspace(target_dir: Optional[Path] = None) -> Path:
     config_template = """version: 1
 environments:
   # production:
-  #   key_path: ../keys/prod.json
+  #   key_file: ../keys/prod.json
   #   description: "Production environment"
   # staging:
   #   key_env: GCP_STAGING_KEY
@@ -284,8 +284,8 @@ def save_config(config: WorkspaceConfig) -> None:
     # Add environments
     for env_name, env_config in config.environments.items():
         env_data = {}
-        if env_config.key_path:
-            env_data['key_path'] = env_config.key_path
+        if env_config.key_file:
+            env_data['key_file'] = env_config.key_file
         if env_config.key_env:
             env_data['key_env'] = env_config.key_env
         if env_config.description:
@@ -299,7 +299,7 @@ def save_config(config: WorkspaceConfig) -> None:
 
 def add_environment(
     env_name: str,
-    key_path: Optional[str] = None,
+    key_file: Optional[str] = None,
     key_env: Optional[str] = None,
     description: Optional[str] = None,
     config_path: Optional[Path] = None
@@ -309,8 +309,8 @@ def add_environment(
 
     Args:
         env_name: Name of the environment
-        key_path: Path to GCP service account key file (relative to cwd)
-        key_env: Environment variable name containing key JSON
+        key_file: Path to GCP service account key file (relative to cwd)
+        key_env: Environment variable name containing key JSON or path to key file
         description: Optional description of the environment
         config_path: Path to config.yaml (default: search from cwd)
 
@@ -325,23 +325,23 @@ def add_environment(
     if env_name in config.environments:
         raise ValueError(f"Environment '{env_name}' already exists")
 
-    # Convert key_path to relative path from config.yaml location
-    if key_path:
-        key_path_abs = (Path.cwd() / key_path).resolve()
+    # Convert key_file to relative path from config.yaml location
+    if key_file:
+        key_file_abs = (Path.cwd() / key_file).resolve()
         config_dir_abs = config.config_dir.resolve()
         try:
             # Calculate relative path from config.yaml to key file
-            key_path_relative = os.path.relpath(key_path_abs, config_dir_abs)
+            key_file_relative = os.path.relpath(key_file_abs, config_dir_abs)
         except ValueError:
             # On Windows, relpath fails if paths are on different drives
-            key_path_relative = str(key_path_abs)
+            key_file_relative = str(key_file_abs)
     else:
-        key_path_relative = None
+        key_file_relative = None
 
     # Create new environment config
     new_env = EnvironmentConfig(
         name=env_name,
-        key_path=key_path_relative,
+        key_file=key_file_relative,
         key_env=key_env,
         description=description
     )

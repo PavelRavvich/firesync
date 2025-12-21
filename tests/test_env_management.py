@@ -39,7 +39,7 @@ class TestSaveConfig(unittest.TestCase):
 
     def test_save_config_basic(self):
         """Test saving basic configuration."""
-        env1 = EnvironmentConfig(name="prod", key_path="keys/prod.json")
+        env1 = EnvironmentConfig(name="prod", key_file="keys/prod.json")
         env2 = EnvironmentConfig(name="dev", key_env="DEV_KEY")
 
         config = WorkspaceConfig(
@@ -65,7 +65,7 @@ class TestSaveConfig(unittest.TestCase):
         """Test saving configuration with descriptions."""
         env1 = EnvironmentConfig(
             name="prod",
-            key_path="keys/prod.json",
+            key_file="keys/prod.json",
             description="Production environment"
         )
 
@@ -110,15 +110,15 @@ class TestAddEnvironment(unittest.TestCase):
         self.keys_dir = Path(self.temp_dir) / "keys"
         self.keys_dir.mkdir()
 
-    def test_add_environment_with_key_path(self):
-        """Test adding environment with key_path."""
+    def test_add_environment_with_key_file(self):
+        """Test adding environment with key_file."""
         # Change to temp_dir so relative paths work
         original_cwd = os.getcwd()
         os.chdir(self.temp_dir)
         try:
             add_environment(
                 env_name="production",
-                key_path="keys/prod.json",
+                key_file="keys/prod.json",
                 description="Production environment",
                 config_path=self.config_path
             )
@@ -130,7 +130,7 @@ class TestAddEnvironment(unittest.TestCase):
             prod_env = config.environments["production"]
             self.assertEqual(prod_env.name, "production")
             # Path should be relative to config.yaml (normalize for cross-platform)
-            self.assertEqual(Path(prod_env.key_path), Path("../keys/prod.json"))
+            self.assertEqual(Path(prod_env.key_file), Path("../keys/prod.json"))
             self.assertEqual(prod_env.description, "Production environment")
         finally:
             os.chdir(original_cwd)
@@ -150,7 +150,7 @@ class TestAddEnvironment(unittest.TestCase):
 
         staging_env = config.environments["staging"]
         self.assertEqual(staging_env.key_env, "GCP_STAGING_KEY")
-        self.assertIsNone(staging_env.key_path)
+        self.assertIsNone(staging_env.key_file)
 
     def test_add_environment_without_description(self):
         """Test adding environment without description."""
@@ -168,7 +168,7 @@ class TestAddEnvironment(unittest.TestCase):
         """Test that adding existing environment raises ValueError."""
         add_environment(
             env_name="prod",
-            key_path="keys/prod.json",
+            key_file="keys/prod.json",
             config_path=self.config_path
         )
 
@@ -176,7 +176,7 @@ class TestAddEnvironment(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             add_environment(
                 env_name="prod",
-                key_path="keys/prod2.json",
+                key_file="keys/prod2.json",
                 config_path=self.config_path
             )
         self.assertIn("already exists", str(ctx.exception))
@@ -187,7 +187,7 @@ class TestAddEnvironment(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             add_environment(
                 env_name="test",
-                key_path="test.json",
+                key_file="test.json",
                 config_path=non_existent
             )
 
@@ -206,7 +206,7 @@ class TestRemoveEnvironment(unittest.TestCase):
         self.config_path = self.workspace_dir / CONFIG_FILE_NAME
 
         # Create config with multiple environments
-        env1 = EnvironmentConfig(name="prod", key_path="keys/prod.json")
+        env1 = EnvironmentConfig(name="prod", key_file="keys/prod.json")
         env2 = EnvironmentConfig(name="staging", key_env="STAGING_KEY")
         env3 = EnvironmentConfig(name="dev", key_env="DEV_KEY")
 
@@ -295,7 +295,7 @@ class TestPathRecalculation(unittest.TestCase):
             # Add environment with path relative to project_dir
             add_environment(
                 env_name="prod",
-                key_path="../keys/prod.json",
+                key_file="../keys/prod.json",
                 config_path=self.config_path
             )
 
@@ -306,12 +306,12 @@ class TestPathRecalculation(unittest.TestCase):
             # config.yaml is at: temp_dir/project/firestore-migration/config.yaml
             # key is at: temp_dir/keys/prod.json
             # relative path: ../../keys/prod.json
-            self.assertEqual(Path(prod_env.key_path), Path("../../keys/prod.json"))
+            self.assertEqual(Path(prod_env.key_file), Path("../../keys/prod.json"))
 
             # Verify absolute path is correct
-            abs_key_path = config.config_dir / prod_env.key_path
+            abs_key_file = config.config_dir / prod_env.key_file
             expected_abs_path = self.keys_dir / "prod.json"
-            self.assertEqual(abs_key_path.resolve(), expected_abs_path.resolve())
+            self.assertEqual(abs_key_file.resolve(), expected_abs_path.resolve())
 
         finally:
             os.chdir(original_cwd)
@@ -328,7 +328,7 @@ class TestPathRecalculation(unittest.TestCase):
             # Add environment with path relative to src_dir
             add_environment(
                 env_name="prod",
-                key_path="../../keys/prod.json",
+                key_file="../../keys/prod.json",
                 config_path=self.config_path
             )
 
@@ -336,9 +336,9 @@ class TestPathRecalculation(unittest.TestCase):
             prod_env = config.environments["prod"]
 
             # Verify absolute path is correct
-            abs_key_path = config.config_dir / prod_env.key_path
+            abs_key_file = config.config_dir / prod_env.key_file
             expected_abs_path = self.keys_dir / "prod.json"
-            self.assertEqual(abs_key_path.resolve(), expected_abs_path.resolve())
+            self.assertEqual(abs_key_file.resolve(), expected_abs_path.resolve())
 
         finally:
             os.chdir(original_cwd)
