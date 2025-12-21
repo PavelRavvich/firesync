@@ -109,119 +109,229 @@ Get help on any command:
 
 ## Commands Overview
 
-### firesync init
+All commands support global flags:
+- `--verbose` / `-v` - Show debug logs and gcloud commands
+- `--quiet` / `-q` - Minimize output (errors only)
 
-Initialize a new FireSync workspace. Creates `config.yaml` to manage multiple environments.
+### `firesync init`
+
+Initialize a new FireSync workspace.
+
+**Required flags:** None
+
+**Optional flags:** None
 
 ```bash
-./firesync init
+firesync init
 ```
 
-Creates:
-- `config.yaml` - Workspace configuration
-- `firestore_schema/` - Default schema directory
+**Creates:**
+- `firestore-migration/config.yaml` - Workspace configuration
+- `firestore-migration/schemas/` - Schema directory
 
-### firesync env
+---
 
-Manage environments in your workspace.
+### `firesync env list`
 
-**Add environment:**
+List all configured environments.
+
+**Required flags:** None
+
+**Optional flags:** None
+
 ```bash
-# Using key file path
-./firesync env add dev --key-path=./secrets/gcp-key-dev.json
+firesync env list
+```
 
-# Using key file path with description
-./firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
+---
+
+### `firesync env show <name>`
+
+Show details of a specific environment.
+
+**Required arguments:**
+- `<name>` - Environment name (positional)
+
+**Optional flags:** None
+
+```bash
+firesync env show dev
+firesync env show production
+```
+
+---
+
+### `firesync env add <name>`
+
+Add a new environment to workspace.
+
+**Required arguments:**
+- `<name>` - Environment name (positional, e.g., dev, staging, prod)
+
+**Required flags (one of):**
+- `--key-path <path>` - Path to GCP service account key file
+- `--key-env <var>` - Environment variable containing GCP key JSON
+
+**Optional flags:**
+- `--description <text>` - Environment description
+
+```bash
+# Using key file
+firesync env add dev --key-path ../secrets/gcp-key-dev.json
+firesync env add prod --key-path ../secrets/prod.json --description "Production environment"
 
 # Using environment variable
-./firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
+firesync env add staging --key-env GCP_STAGING_KEY --description "Staging"
 ```
 
-**List environments:**
+---
+
+### `firesync env remove <name>`
+
+Remove an environment from workspace.
+
+**Required arguments:**
+- `<name>` - Environment name (positional)
+
+**Optional flags:**
+- `--force` / `-f` - Skip confirmation prompt
+
 ```bash
-./firesync env list
-# Shows environment names with key paths (including absolute paths) or key env variables
-# Example output:
-#   • dev
-#     key_path: secrets/gcp-key-dev.json - Development environment (/absolute/path/to/secrets/gcp-key-dev.json)
-#   • prod
-#     key_env: GCP_PROD_KEY - Production environment
+firesync env remove dev
+firesync env remove old-env -f
 ```
 
-**Show environment details:**
+---
+
+### `firesync pull`
+
+Export Firestore schema to local JSON files.
+
+**Required flags (one of):**
+- `--env <name>` / `-e <name>` - Pull from specific environment
+- `--all` / `-a` - Pull from all environments
+
+**Optional flags:** None
+
 ```bash
-./firesync env show dev
+# Single environment
+firesync pull -e dev
+firesync pull --env production
+
+# All environments
+firesync pull --all
+firesync pull -a
+
+# With global flags
+firesync --verbose pull -e dev
+firesync -q pull -a
 ```
 
-**Remove environment:**
+**Exports to:** `schemas/<env>/` directory
+- `composite-indexes.json`
+- `field-indexes.json`
+- `ttl-policies.json`
+
+---
+
+### `firesync plan`
+
+Compare schemas and preview changes.
+
+#### Standard mode (local vs remote)
+
+**Required flags:**
+- `--env <name>` / `-e <name>` - Environment to compare
+
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory
+
 ```bash
-./firesync env remove dev
+firesync plan -e dev
+firesync plan --env staging
+firesync plan -e prod -d /custom/schemas
 ```
 
-### firesync pull
+#### Migration mode (compare two local schemas)
 
-Export Firestore schema from GCP to local JSON files.
+**Required flags:**
+- `--from <source>` - Source environment
+- `--to <target>` - Target environment
 
-**Pull all environments:**
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory
+
 ```bash
-./firesync pull --all
+firesync plan --from dev --to staging
+firesync plan --from staging --to prod
+firesync -v plan --from dev --to prod
 ```
 
-**Pull single environment:**
+**Output indicators:**
+- `[+] WILL CREATE` - Exists locally, not remotely
+- `[-] WILL DELETE` - Exists remotely, not locally
+- `[~] WILL UPDATE` - Differs between local and remote
+- `[~] No changes` - Schemas in sync
+
+---
+
+### `firesync apply`
+
+Apply schema to Firestore.
+
+#### Standard mode (local → remote)
+
+**Required flags:**
+- `--env <name>` / `-e <name>` - Environment to apply to
+
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory
+- `--auto-approve` / `-y` - Skip confirmation (for CI/CD)
+- `--dry-run` - Show commands without executing
+
 ```bash
-./firesync pull --env=dev
+# Basic apply
+firesync apply -e dev
+
+# Auto-approve (CI/CD)
+firesync apply -e staging -y
+
+# Dry-run
+firesync apply -e prod --dry-run
+
+# Combined
+firesync apply -e dev -y --dry-run
 ```
 
-Creates three JSON files in schema directory:
-- `composite-indexes.json` - Composite indexes
-- `field-indexes.json` - Single-field indexes
-- `ttl-policies.json` - TTL policies
+#### Migration mode (source schema → target remote)
 
-### firesync plan
+**Required flags:**
+- `--from <source>` - Source environment (read schema from here)
+- `--to <target>` - Target environment (apply to this Firestore)
 
-Compare local schema against remote Firestore and preview changes.
+**Optional flags:**
+- `--auto-approve` / `-y` - Skip confirmation
+- `--dry-run` - Show commands without executing
 
-**Compare local vs remote:**
 ```bash
-./firesync plan --env=dev
+# Migrate dev → staging
+firesync apply --from dev --to staging
+
+# With auto-approve
+firesync apply --from staging --to prod -y
+
+# Dry-run migration
+firesync apply --from dev --to prod --dry-run
+
+# Verbose with auto-approve
+firesync -v apply --from dev --to staging -y
 ```
 
-**Migration mode - compare two environments (local vs local):**
-```bash
-./firesync plan --env-from=dev --env-to=staging
-```
-
-**With custom schema directory:**
-```bash
-./firesync plan --env=dev --schema-dir=custom_schemas
-```
-
-Output shows:
-- `[+] WILL CREATE` - Resource exists locally but not remotely
-- `[-] WILL DELETE` - Resource exists remotely but not locally
-- `[~] WILL UPDATE` - Resource differs between local and remote
-- `[~] No changes` - Schemas are in sync
-
-### firesync apply
-
-Deploy local schema to Firestore.
-
-**Apply to environment:**
-```bash
-./firesync apply --env=dev
-```
-
-**Migration mode - apply source schema to target environment:**
-```bash
-./firesync apply --env-from=dev --env-to=staging
-```
-
-**With custom schema directory:**
-```bash
-./firesync apply --env=prod --schema-dir=custom_schemas
-```
-
-**Note:** Apply operations are idempotent and skip existing resources. Delete operations are not implemented for safety.
+**Behavior:**
+- Shows confirmation prompt with change summary (unless `-y`)
+- Idempotent - skips existing resources
+- Logs all gcloud commands
+- Dry-run skips authentication and execution
 
 ## Workspace Configuration
 
@@ -325,18 +435,18 @@ vim firestore_schema/dev/composite-indexes.json
 ./firesync apply --env=dev
 
 # Promote dev schema to staging
-# --env-from: source environment (reads LOCAL schema files from firestore_schema/dev/)
-# --env-to: target environment (applies to REMOTE Firestore in staging project)
-./firesync plan --env-from=dev --env-to=staging
-./firesync apply --env-from=dev --env-to=staging
+# --from: source environment (reads LOCAL schema files from schemas/dev/)
+# --to: target environment (applies to REMOTE Firestore in staging project)
+./firesync plan --from dev --to staging
+./firesync apply --from dev --to staging
 
 # IMPORTANT: Local files for staging are NOT updated automatically!
 # Pull staging schema to update local files after migration:
 ./firesync pull --env=staging
 
 # After testing, promote to production
-./firesync plan --env-from=dev --env-to=prod
-./firesync apply --env-from=dev --env-to=prod
+./firesync plan --from dev --to prod
+./firesync apply --from dev --to prod
 
 # Update production local files
 ./firesync pull --env=prod
@@ -348,10 +458,10 @@ Compare and migrate schemas between environments:
 
 ```bash
 # Compare dev and staging schemas (local vs local)
-./firesync plan --env-from=dev --env-to=staging
+./firesync plan --from dev --to staging
 
 # Apply dev schema to staging environment
-./firesync apply --env-from=dev --env-to=staging
+./firesync apply --from dev --to staging
 
 # Verify changes
 ./firesync pull --env=staging

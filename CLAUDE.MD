@@ -50,30 +50,177 @@ firesync/
     └── gcp-key-production.json
 ```
 
-## Tools & Scripts
+## CLI Commands Reference
 
-### firestore_pull.py
-Exports current Firestore configuration from GCP to local JSON files.
+All commands support global flags `--verbose/-v` and `--quiet/-q`.
 
-**Usage:**
+### `firesync init`
+
+Initialize a new FireSync workspace in the current directory.
+
+**Required flags:** None
+
+**Optional flags:** None
+
+**Examples:**
 ```bash
-./firestore_pull.py --env=dev
-./firestore_pull.py --env=production
-ENV=staging ./firestore_pull.py
+firesync init
+firesync --verbose init
+```
+
+**What it creates:**
+- `firestore-migration/config.yaml` - Workspace configuration file
+- `firestore-migration/schemas/` - Directory for schema files
+
+---
+
+### `firesync env list`
+
+List all environments configured in the workspace.
+
+**Required flags:** None
+
+**Optional flags:** None
+
+**Examples:**
+```bash
+firesync env list
+firesync -v env list
+```
+
+---
+
+### `firesync env show <name>`
+
+Show details of a specific environment.
+
+**Required arguments:**
+- `<name>` - Environment name (positional argument)
+
+**Optional flags:** None
+
+**Examples:**
+```bash
+firesync env show dev
+firesync env show production
+```
+
+---
+
+### `firesync env add <name>`
+
+Add a new environment to the workspace.
+
+**Required arguments:**
+- `<name>` - Environment name (positional argument, e.g., dev, staging, prod)
+
+**Required flags (one of):**
+- `--key-path <path>` - Path to GCP service account key file (relative to config.yaml)
+- `--key-env <var>` - Environment variable name containing GCP key JSON
+
+**Optional flags:**
+- `--description <text>` - Optional description of the environment
+
+**Examples:**
+```bash
+# Using key file
+firesync env add dev --key-path ../secrets/gcp-key-dev.json
+firesync env add prod --key-path ../secrets/gcp-key-prod.json --description "Production environment"
+
+# Using environment variable
+firesync env add staging --key-env GCP_STAGING_KEY --description "Staging environment"
+```
+
+---
+
+### `firesync env remove <name>`
+
+Remove an environment from the workspace.
+
+**Required arguments:**
+- `<name>` - Environment name (positional argument)
+
+**Optional flags:**
+- `--force/-f` - Skip confirmation prompt
+
+**Examples:**
+```bash
+firesync env remove dev
+firesync env remove old-env -f
+```
+
+---
+
+### `firesync pull`
+
+Export Firestore schema from GCP to local JSON files.
+
+**Required flags (one of):**
+- `--env <name>` / `-e <name>` - Pull schema from specific environment
+- `--all` / `-a` - Pull schemas from all configured environments
+
+**Optional flags:** None
+
+**Examples:**
+```bash
+# Pull from single environment
+firesync pull -e dev
+firesync pull --env production
+
+# Pull from all environments
+firesync pull --all
+firesync pull -a
+
+# With global flags
+firesync --verbose pull -e dev
+firesync -q pull -a
 ```
 
 **What it exports:**
-- Composite indexes → `firestore_schema/composite-indexes.json`
-- Field indexes → `firestore_schema/field-indexes.json`
-- TTL policies → `firestore_schema/ttl-policies.json`
+- `schemas/<env>/composite-indexes.json` - Composite indexes
+- `schemas/<env>/field-indexes.json` - Single-field indexes
+- `schemas/<env>/ttl-policies.json` - TTL policies
 
-### firestore_plan.py
-Compares local schema files against remote Firestore state and shows what would change.
+---
 
-**Usage:**
+### `firesync plan`
+
+Compare local schema against remote Firestore or between environments.
+
+#### Standard mode (compare local vs remote)
+
+**Required flags:**
+- `--env <name>` / `-e <name>` - Environment to compare against
+
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory path
+
+**Examples:**
 ```bash
-./firestore_plan.py --env=dev
-./firestore_plan.py --env=staging --schema-dir=custom_schema
+firesync plan -e dev
+firesync plan --env staging
+firesync plan -e prod -d /custom/schemas
+```
+
+#### Migration mode (compare two local schemas)
+
+**Required flags:**
+- `--from <source>` - Source environment name
+- `--to <target>` - Target environment name
+
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory path
+
+**Examples:**
+```bash
+# Compare dev → staging schemas
+firesync plan --from dev --to staging
+
+# Compare staging → production schemas
+firesync plan --from staging --to prod
+
+# With verbose output
+firesync -v plan --from dev --to prod
 ```
 
 **Output indicators:**
@@ -81,19 +228,82 @@ Compares local schema files against remote Firestore state and shows what would 
 - `[-] WILL DELETE` - Resource exists remotely but not locally
 - `[~] WILL UPDATE` - Resource exists in both but differs
 
-### firestore_apply.py
-Applies local schema definitions to Firestore using gcloud commands.
+---
 
-**Usage:**
+### `firesync apply`
+
+Apply local schema to Firestore or migrate between environments.
+
+#### Standard mode (apply local → remote)
+
+**Required flags:**
+- `--env <name>` / `-e <name>` - Environment to apply to
+
+**Optional flags:**
+- `--schema-dir <path>` / `-d <path>` - Custom schema directory path
+- `--auto-approve` / `-y` - Skip confirmation prompt (for CI/CD)
+- `--dry-run` - Show gcloud commands without executing them
+
+**Examples:**
 ```bash
-./firestore_apply.py --env=dev
-./firestore_apply.py --env=production --schema-dir=custom_schema
+# Apply to dev environment
+firesync apply -e dev
+
+# Apply without confirmation (CI/CD)
+firesync apply -e staging -y
+
+# Dry-run (show commands only)
+firesync apply -e prod --dry-run
+
+# Dry-run with auto-approve
+firesync apply -e dev -y --dry-run
+
+# With custom schema directory
+firesync apply -e prod -d /custom/schemas -y
+```
+
+#### Migration mode (apply source schema → target remote)
+
+**Required flags:**
+- `--from <source>` - Source environment (read schema from here)
+- `--to <target>` - Target environment (apply to this Firestore)
+
+**Optional flags:**
+- `--auto-approve` / `-y` - Skip confirmation prompt
+- `--dry-run` - Show gcloud commands without executing them
+
+**Examples:**
+```bash
+# Migrate dev schema to staging Firestore
+firesync apply --from dev --to staging
+
+# Migrate with auto-approve
+firesync apply --from staging --to prod -y
+
+# Dry-run migration
+firesync apply --from dev --to prod --dry-run
+
+# Verbose migration with auto-approve
+firesync -v apply --from dev --to staging -y
 ```
 
 **Behavior:**
+- Shows confirmation prompt with change summary (unless `-y` is used)
 - Skips resources that already exist (idempotent)
 - Logs all gcloud commands before execution
 - Handles permission errors gracefully
+- In dry-run mode: skips authentication and shows commands only
+
+---
+
+## Global Flags
+
+These flags work with all commands:
+
+- `--verbose` / `-v` - Enable verbose output (show debug logs and gcloud commands)
+- `--quiet` / `-q` - Minimize output (show only errors and final results)
+- `--version` - Show FireSync version number
+- `--help` / `-h` - Show help message
 
 ## Development Guidelines
 
