@@ -90,6 +90,11 @@ def create_parser():
 def main():
     """Main CLI entry point."""
     import os
+    from pathlib import Path
+
+    # Ensure PYTHONPATH includes src directory
+    # Get the src directory (parent of this __main__.py file)
+    src_dir = Path(__file__).parent.resolve()
 
     # Special handling for 'env' command - pass through directly
     if len(sys.argv) > 1 and sys.argv[1] == 'env':
@@ -100,10 +105,21 @@ def main():
         if '--quiet' in sys.argv or '-q' in sys.argv:
             env['FIRESYNC_QUIET'] = '1'
 
+        # Set PYTHONPATH to ONLY our src directory (replace, don't append)
+        # This prevents conflicts with other projects' modules
+        env['PYTHONPATH'] = str(src_dir)
+
+        # Remove current directory from being added to sys.path
+        # by unsetting PYTHONSAFEPATH (Python 3.11+) or using empty string for cwd
+        env['PYTHONDONTWRITEBYTECODE'] = '1'
+
         # Remove global flags from argv before passing to subcommand
         filtered_args = [arg for arg in sys.argv[2:] if arg not in ('--verbose', '-v', '--quiet', '-q')]
+
+        # Run the command from a neutral directory to avoid current dir in sys.path
+        import tempfile
         cmd = ['python3', '-m', 'commands.env'] + filtered_args
-        result = subprocess.run(cmd, env=env)
+        result = subprocess.run(cmd, env=env, cwd=str(src_dir.parent))
         sys.exit(result.returncode)
 
     parser = create_parser()
@@ -119,6 +135,11 @@ def main():
         env['FIRESYNC_VERBOSE'] = '1'
     if args.quiet:
         env['FIRESYNC_QUIET'] = '1'
+
+    # Set PYTHONPATH to ONLY our src directory (replace, don't append)
+    # This prevents conflicts with other projects' modules
+    env['PYTHONPATH'] = str(src_dir)
+    env['PYTHONDONTWRITEBYTECODE'] = '1'
 
     # Build command
     cmd = ['python3', '-m']
@@ -156,7 +177,8 @@ def main():
             cmd.append('--dry-run')
 
     # Execute the command with environment variables
-    result = subprocess.run(cmd, env=env)
+    # Run from project root directory to avoid current dir in sys.path
+    result = subprocess.run(cmd, env=env, cwd=str(src_dir.parent))
     sys.exit(result.returncode)
 
 

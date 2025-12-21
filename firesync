@@ -4,15 +4,19 @@
 import sys
 from pathlib import Path
 
-# Add src to path
-project_root = Path(__file__).parent
+# Get absolute path to project root (where this script is located)
+project_root = Path(__file__).parent.resolve()
+
+# Add our src directory first to sys.path to avoid conflicts with other projects
+# This ensures our modules are imported, not ones from other projects
 sys.path.insert(0, str(project_root / 'src'))
 
-# Import and run main from __main__.py
-import importlib.util
-spec = importlib.util.spec_from_file_location("__main__", project_root / 'src' / '__main__.py')
-main_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(main_module)
-
+# Now we can safely import and run
 if __name__ == '__main__':
+    # Import the src package's __main__ module
+    import importlib.util
+    main_path = project_root / 'src' / '__main__.py'
+    spec = importlib.util.spec_from_file_location("firesync_main", main_path)
+    main_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(main_module)
     main_module.main()
