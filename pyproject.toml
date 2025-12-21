@@ -31,10 +31,10 @@ Homepage = "https://github.com/PavelRavvich/firesync"
 Repository = "https://github.com/PavelRavvich/firesync"
 
 [project.scripts]
-firesync = "src.__main__:main"
+firesync = "__main__:main"
 
-[tool.setuptools]
-packages = {find = {where = ["src"]}}
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"

@@ -210,5 +210,93 @@ class TestSetupClient(unittest.TestCase):
         )
 
 
+class TestNewCLIFeatures(unittest.TestCase):
+    """Tests for Phase 1 and Phase 2 CLI improvements."""
+
+    def test_parse_pull_short_flag_all(self):
+        """Test parsing -a short flag for --all."""
+        with patch.object(sys, 'argv', ['prog', '-a']):
+            args = parse_pull_args("Test description")
+            self.assertTrue(args.all)
+
+    def test_parse_pull_short_flag_env(self):
+        """Test parsing -e short flag for --env."""
+        with patch.object(sys, 'argv', ['prog', '-e', 'dev']):
+            args = parse_pull_args("Test description")
+            self.assertEqual(args.env, 'dev')
+
+    def test_parse_plan_short_flag_env(self):
+        """Test parsing -e short flag in plan command."""
+        with patch.object(sys, 'argv', ['prog', '-e', 'staging']):
+            args = parse_plan_args("Test description")
+            self.assertEqual(args.env, 'staging')
+
+    def test_parse_plan_short_flag_schema_dir(self):
+        """Test parsing -d short flag for --schema-dir."""
+        with patch.object(sys, 'argv', ['prog', '--env', 'dev', '-d', '/custom']):
+            args = parse_plan_args("Test description")
+            self.assertEqual(args.schema_dir, '/custom')
+
+    def test_parse_apply_auto_approve(self):
+        """Test parsing --auto-approve flag."""
+        with patch.object(sys, 'argv', ['prog', '--env', 'dev', '--auto-approve']):
+            args = parse_apply_args("Test description")
+            self.assertTrue(args.auto_approve)
+
+    def test_parse_apply_auto_approve_short(self):
+        """Test parsing -y short flag for --auto-approve."""
+        with patch.object(sys, 'argv', ['prog', '--env', 'dev', '-y']):
+            args = parse_apply_args("Test description")
+            self.assertTrue(args.auto_approve)
+
+    def test_parse_apply_dry_run(self):
+        """Test parsing --dry-run flag."""
+        with patch.object(sys, 'argv', ['prog', '--env', 'dev', '--dry-run']):
+            args = parse_apply_args("Test description")
+            self.assertTrue(args.dry_run)
+
+    def test_parse_apply_dry_run_with_auto_approve(self):
+        """Test parsing both --dry-run and --auto-approve."""
+        with patch.object(sys, 'argv', ['prog', '--env', 'dev', '--dry-run', '-y']):
+            args = parse_apply_args("Test description")
+            self.assertTrue(args.dry_run)
+            self.assertTrue(args.auto_approve)
+
+    def test_parse_apply_migration_with_dry_run(self):
+        """Test parsing migration mode with dry-run."""
+        with patch.object(sys, 'argv', ['prog', '--from', 'dev', '--to', 'prod', '--dry-run']):
+            args = parse_apply_args("Test description")
+            self.assertEqual(args.from_env, 'dev')
+            self.assertEqual(args.to_env, 'prod')
+            self.assertTrue(args.dry_run)
+
+    @patch('cli.GCloudClient')
+    @patch('cli.load_config')
+    @patch('config.FiresyncConfig.from_args')
+    def test_setup_client_with_dry_run(self, mock_from_args, mock_load_config, mock_gcloud):
+        """Test setup_client with dry_run parameter."""
+        # Setup mocks
+        env_config = EnvironmentConfig(
+            name='dev',
+            key_path='secrets/key.json',
+            key_env=None,
+            description=None
+        )
+        workspace_config = MagicMock(spec=WorkspaceConfig)
+        workspace_config.get_env.return_value = env_config
+        workspace_config.config_dir = Path('/test')
+        workspace_config.get_schema_dir.return_value = Path('/test/schemas/dev')
+        mock_load_config.return_value = workspace_config
+
+        mock_config = MagicMock(spec=FiresyncConfig)
+        mock_from_args.return_value = mock_config
+
+        # Call setup_client with dry_run=True
+        config, client = setup_client('dev', dry_run=True)
+
+        # Verify GCloudClient was called with dry_run=True
+        mock_gcloud.assert_called_once_with(mock_config, dry_run=True)
+
+
 if __name__ == '__main__':
     unittest.main()
