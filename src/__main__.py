@@ -105,21 +105,23 @@ def main():
         if '--quiet' in sys.argv or '-q' in sys.argv:
             env['FIRESYNC_QUIET'] = '1'
 
-        # Set PYTHONPATH to ONLY our src directory (replace, don't append)
-        # This prevents conflicts with other projects' modules
-        env['PYTHONPATH'] = str(src_dir)
-
-        # Remove current directory from being added to sys.path
-        # by unsetting PYTHONSAFEPATH (Python 3.11+) or using empty string for cwd
+        # Set PYTHONPATH to ONLY our src directory FIRST (prepend, not replace)
+        # This ensures our modules are found before any others
+        existing_pythonpath = env.get('PYTHONPATH', '')
+        if existing_pythonpath:
+            env['PYTHONPATH'] = f"{src_dir}{os.pathsep}{existing_pythonpath}"
+        else:
+            env['PYTHONPATH'] = str(src_dir)
         env['PYTHONDONTWRITEBYTECODE'] = '1'
 
         # Remove global flags from argv before passing to subcommand
         filtered_args = [arg for arg in sys.argv[2:] if arg not in ('--verbose', '-v', '--quiet', '-q')]
 
-        # Run the command from a neutral directory to avoid current dir in sys.path
-        import tempfile
-        cmd = ['python3', '-m', 'commands.env'] + filtered_args
-        result = subprocess.run(cmd, env=env, cwd=str(src_dir.parent))
+        # Run command - DO NOT change cwd, keep user's current directory
+        # Run the command file directly instead of using -m to avoid sys.path[0] issues
+        command_file = src_dir / 'commands' / 'env.py'
+        cmd = ['python3', str(command_file)] + filtered_args
+        result = subprocess.run(cmd, env=env)
         sys.exit(result.returncode)
 
     parser = create_parser()
@@ -136,26 +138,31 @@ def main():
     if args.quiet:
         env['FIRESYNC_QUIET'] = '1'
 
-    # Set PYTHONPATH to ONLY our src directory (replace, don't append)
-    # This prevents conflicts with other projects' modules
-    env['PYTHONPATH'] = str(src_dir)
+    # Set PYTHONPATH to ONLY our src directory FIRST (prepend, not replace)
+    # This ensures our modules are found before any others
+    existing_pythonpath = env.get('PYTHONPATH', '')
+    if existing_pythonpath:
+        env['PYTHONPATH'] = f"{src_dir}{os.pathsep}{existing_pythonpath}"
+    else:
+        env['PYTHONPATH'] = str(src_dir)
     env['PYTHONDONTWRITEBYTECODE'] = '1'
 
-    # Build command
-    cmd = ['python3', '-m']
+    # Build command - run command files directly instead of using -m
+    # This avoids sys.path[0] being set to current directory
+    cmd = ['python3']
 
     if args.command == 'init':
-        cmd.append('commands.init')
+        cmd.append(str(src_dir / 'commands' / 'init.py'))
 
     elif args.command == 'pull':
-        cmd.append('commands.pull')
+        cmd.append(str(src_dir / 'commands' / 'pull.py'))
         if hasattr(args, 'all') and args.all:
             cmd.append('--all')
         elif hasattr(args, 'env') and args.env:
             cmd.extend(['--env', args.env])
 
     elif args.command == 'plan':
-        cmd.append('commands.plan')
+        cmd.append(str(src_dir / 'commands' / 'plan.py'))
         if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
             cmd.extend(['--from', args.from_env, '--to', args.to_env])
         elif hasattr(args, 'env') and args.env:
@@ -164,7 +171,7 @@ def main():
             cmd.extend(['--schema-dir', args.schema_dir])
 
     elif args.command == 'apply':
-        cmd.append('commands.apply')
+        cmd.append(str(src_dir / 'commands' / 'apply.py'))
         if hasattr(args, 'from_env') and args.from_env and hasattr(args, 'to_env') and args.to_env:
             cmd.extend(['--from', args.from_env, '--to', args.to_env])
         elif hasattr(args, 'env') and args.env:
@@ -177,8 +184,9 @@ def main():
             cmd.append('--dry-run')
 
     # Execute the command with environment variables
-    # Run from project root directory to avoid current dir in sys.path
-    result = subprocess.run(cmd, env=env, cwd=str(src_dir.parent))
+    # DO NOT change cwd - keep user's current directory for workspace detection
+    # PYTHONPATH ensures correct modules are imported
+    result = subprocess.run(cmd, env=env)
     sys.exit(result.returncode)
 
 
