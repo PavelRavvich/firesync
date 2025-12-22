@@ -19,8 +19,8 @@ class TestCompositeIndexOperations(unittest.TestCase):
             "queryScope": "COLLECTION",
             "fields": [
                 {"fieldPath": "name", "order": "ASCENDING"},
-                {"fieldPath": "age", "order": "DESCENDING"}
-            ]
+                {"fieldPath": "age", "order": "DESCENDING"},
+            ],
         }
         result = CompositeIndexOperations.normalize(index)
         self.assertEqual(result[0], "users")
@@ -30,11 +30,13 @@ class TestCompositeIndexOperations(unittest.TestCase):
 
     def test_compare_create(self):
         """Test comparison detects indexes to create."""
-        local = [{
-            "collectionGroup": "orders",
-            "queryScope": "COLLECTION",
-            "fields": [{"fieldPath": "total", "order": "ASCENDING"}]
-        }]
+        local = [
+            {
+                "collectionGroup": "orders",
+                "queryScope": "COLLECTION",
+                "fields": [{"fieldPath": "total", "order": "ASCENDING"}],
+            }
+        ]
         remote = []
 
         diff = CompositeIndexOperations.compare(local, remote)
@@ -45,11 +47,13 @@ class TestCompositeIndexOperations(unittest.TestCase):
     def test_compare_delete(self):
         """Test comparison detects indexes to delete."""
         local = []
-        remote = [{
-            "collectionGroup": "products",
-            "queryScope": "COLLECTION",
-            "fields": [{"fieldPath": "price", "order": "DESCENDING"}]
-        }]
+        remote = [
+            {
+                "collectionGroup": "products",
+                "queryScope": "COLLECTION",
+                "fields": [{"fieldPath": "price", "order": "DESCENDING"}],
+            }
+        ]
 
         diff = CompositeIndexOperations.compare(local, remote)
 
@@ -61,7 +65,7 @@ class TestCompositeIndexOperations(unittest.TestCase):
         index = {
             "collectionGroup": "users",
             "queryScope": "COLLECTION",
-            "fields": [{"fieldPath": "name", "order": "ASCENDING"}]
+            "fields": [{"fieldPath": "name", "order": "ASCENDING"}],
         }
 
         diff = CompositeIndexOperations.compare([index], [index])
@@ -72,8 +76,11 @@ class TestCompositeIndexOperations(unittest.TestCase):
     def test_compare_skips_invalid(self):
         """Test comparison skips invalid indexes."""
         local = [
-            {"collectionGroup": "valid", "fields": [{"fieldPath": "x", "order": "ASCENDING"}]},
-            {"collectionGroup": "invalid"}  # Missing fields
+            {
+                "collectionGroup": "valid",
+                "fields": [{"fieldPath": "x", "order": "ASCENDING"}],
+            },
+            {"collectionGroup": "invalid"},  # Missing fields
         ]
         remote = []
 
@@ -88,8 +95,8 @@ class TestCompositeIndexOperations(unittest.TestCase):
             "queryScope": "COLLECTION_GROUP",
             "fields": [
                 {"fieldPath": "status", "order": "ASCENDING"},
-                {"fieldPath": "createdAt", "order": "DESCENDING"}
-            ]
+                {"fieldPath": "createdAt", "order": "DESCENDING"},
+            ],
         }
 
         cmd = CompositeIndexOperations.build_create_command(index)
@@ -107,9 +114,7 @@ class TestCompositeIndexOperations(unittest.TestCase):
 
     def test_build_create_command_missing_collection(self):
         """Test error when collection is missing."""
-        index = {
-            "fields": [{"fieldPath": "name", "order": "ASCENDING"}]
-        }
+        index = {"fields": [{"fieldPath": "name", "order": "ASCENDING"}]}
 
         with self.assertRaises(ValueError):
             CompositeIndexOperations.build_create_command(index)
@@ -127,11 +132,13 @@ class TestFieldIndexOperations(unittest.TestCase):
 
     def test_compare_create(self):
         """Test comparison detects field indexes to create."""
-        local = [{
-            "collectionGroupId": "users",
-            "fieldPath": "email",
-            "indexes": [{"order": "ASCENDING"}]
-        }]
+        local = [
+            {
+                "collectionGroupId": "users",
+                "fieldPath": "email",
+                "indexes": [{"order": "ASCENDING"}],
+            }
+        ]
         remote = []
 
         diff = FieldIndexOperations.compare(local, remote)
@@ -143,12 +150,14 @@ class TestFieldIndexOperations(unittest.TestCase):
     def test_compare_delete(self):
         """Test comparison detects field indexes to delete."""
         local = []
-        remote = [{
-            "collectionGroup": "products",
-            "fieldPath": "name",
-            "name": "projects/x/collectionGroups/products/fields/name",
-            "indexes": [{"order": "DESCENDING"}]
-        }]
+        remote = [
+            {
+                "collectionGroup": "products",
+                "fieldPath": "name",
+                "name": "projects/x/collectionGroups/products/fields/name",
+                "indexes": [{"order": "DESCENDING"}],
+            }
+        ]
 
         diff = FieldIndexOperations.compare(local, remote)
 
@@ -157,17 +166,21 @@ class TestFieldIndexOperations(unittest.TestCase):
 
     def test_compare_update(self):
         """Test comparison detects field index updates."""
-        local = [{
-            "collectionGroupId": "orders",
-            "fieldPath": "total",
-            "indexes": [{"order": "ASCENDING"}, {"order": "DESCENDING"}]
-        }]
-        remote = [{
-            "collectionGroup": "orders",
-            "fieldPath": "total",
-            "name": "projects/x/collectionGroups/orders/fields/total",
-            "indexes": [{"order": "ASCENDING"}]
-        }]
+        local = [
+            {
+                "collectionGroupId": "orders",
+                "fieldPath": "total",
+                "indexes": [{"order": "ASCENDING"}, {"order": "DESCENDING"}],
+            }
+        ]
+        remote = [
+            {
+                "collectionGroup": "orders",
+                "fieldPath": "total",
+                "name": "projects/x/collectionGroups/orders/fields/total",
+                "indexes": [{"order": "ASCENDING"}],
+            }
+        ]
 
         diff = FieldIndexOperations.compare(local, remote)
 
@@ -178,8 +191,12 @@ class TestFieldIndexOperations(unittest.TestCase):
     def test_compare_skips_invalid(self):
         """Test comparison skips invalid indexes."""
         local = [
-            {"collectionGroupId": "valid", "fieldPath": "x", "indexes": [{"order": "ASCENDING"}]},
-            {"fieldPath": "invalid"}  # Missing collection
+            {
+                "collectionGroupId": "valid",
+                "fieldPath": "x",
+                "indexes": [{"order": "ASCENDING"}],
+            },
+            {"fieldPath": "invalid"},  # Missing collection
         ]
         remote = []
 
@@ -211,11 +228,13 @@ class TestTTLPolicyOperations(unittest.TestCase):
 
     def test_compare_create(self):
         """Test comparison detects TTL policies to create."""
-        local = [{
-            "collectionGroup": "sessions",
-            "field": "expiresAt",
-            "ttlConfig": {"ttlPeriod": "86400s", "state": "ACTIVE"}
-        }]
+        local = [
+            {
+                "collectionGroup": "sessions",
+                "field": "expiresAt",
+                "ttlConfig": {"ttlPeriod": "86400s", "state": "ACTIVE"},
+            }
+        ]
         remote = []
 
         diff = TTLPolicyOperations.compare(local, remote)
@@ -227,11 +246,9 @@ class TestTTLPolicyOperations(unittest.TestCase):
     def test_compare_delete(self):
         """Test comparison detects TTL policies to delete."""
         local = []
-        remote = [{
-            "collectionGroup": "temp",
-            "field": "createdAt",
-            "ttlPeriod": "3600s"
-        }]
+        remote = [
+            {"collectionGroup": "temp", "field": "createdAt", "ttlPeriod": "3600s"}
+        ]
 
         diff = TTLPolicyOperations.compare(local, remote)
 
@@ -240,16 +257,16 @@ class TestTTLPolicyOperations(unittest.TestCase):
 
     def test_compare_update(self):
         """Test comparison detects TTL policy updates."""
-        local = [{
-            "collectionGroup": "logs",
-            "field": "timestamp",
-            "ttlConfig": {"ttlPeriod": "604800s", "state": "ACTIVE"}
-        }]
-        remote = [{
-            "collectionGroup": "logs",
-            "field": "timestamp",
-            "ttlPeriod": "86400s"
-        }]
+        local = [
+            {
+                "collectionGroup": "logs",
+                "field": "timestamp",
+                "ttlConfig": {"ttlPeriod": "604800s", "state": "ACTIVE"},
+            }
+        ]
+        remote = [
+            {"collectionGroup": "logs", "field": "timestamp", "ttlPeriod": "86400s"}
+        ]
 
         diff = TTLPolicyOperations.compare(local, remote)
 
@@ -259,8 +276,12 @@ class TestTTLPolicyOperations(unittest.TestCase):
     def test_compare_skips_invalid(self):
         """Test comparison skips invalid policies."""
         local = [
-            {"collectionGroup": "valid", "field": "x", "ttlConfig": {"state": "ACTIVE"}},
-            {"collectionGroup": "invalid"}  # Missing field
+            {
+                "collectionGroup": "valid",
+                "field": "x",
+                "ttlConfig": {"state": "ACTIVE"},
+            },
+            {"collectionGroup": "invalid"},  # Missing field
         ]
         remote = []
 
@@ -273,7 +294,7 @@ class TestTTLPolicyOperations(unittest.TestCase):
         policy = {
             "collectionGroup": "sessions",
             "field": "expiresAt",
-            "ttlConfig": {"state": "ACTIVE"}
+            "ttlConfig": {"state": "ACTIVE"},
         }
 
         cmd = TTLPolicyOperations.build_create_command(policy)
@@ -291,7 +312,7 @@ class TestTTLPolicyOperations(unittest.TestCase):
         policy = {
             "collectionGroup": "temp",
             "field": "createdAt",
-            "ttlConfig": {"state": "DISABLED"}
+            "ttlConfig": {"state": "DISABLED"},
         }
 
         cmd = TTLPolicyOperations.build_create_command(policy)
@@ -300,10 +321,7 @@ class TestTTLPolicyOperations(unittest.TestCase):
 
     def test_build_create_command_missing_collection(self):
         """Test error when collection is missing."""
-        policy = {
-            "field": "expiresAt",
-            "ttlConfig": {"state": "ACTIVE"}
-        }
+        policy = {"field": "expiresAt", "ttlConfig": {"state": "ACTIVE"}}
 
         with self.assertRaises(ValueError):
             TTLPolicyOperations.build_create_command(policy)

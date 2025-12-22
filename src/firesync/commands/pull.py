@@ -4,9 +4,9 @@
 import sys
 
 from ..cli import parse_pull_args, setup_client
+from ..logger import setup_logging
 from ..schema import SchemaFile, ensure_schema_dir
 from ..workspace import load_config
-from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()
@@ -23,15 +23,15 @@ def pull_single_environment(env_name):
     print()
     client.export_to_file(
         ["firestore", "indexes", "composite", "list"],
-        config.schema_dir / SchemaFile.COMPOSITE_INDEXES
+        config.schema_dir / SchemaFile.COMPOSITE_INDEXES,
     )
     client.export_to_file(
         ["firestore", "indexes", "fields", "list"],
-        config.schema_dir / SchemaFile.FIELD_INDEXES
+        config.schema_dir / SchemaFile.FIELD_INDEXES,
     )
     client.export_to_file(
         ["firestore", "fields", "ttls", "list"],
-        config.schema_dir / SchemaFile.TTL_POLICIES
+        config.schema_dir / SchemaFile.TTL_POLICIES,
     )
 
     print(f"[+] Firestore schema exported to: {config.schema_dir}")
@@ -43,7 +43,7 @@ def main():
     args = parse_pull_args("Export Firestore schema from GCP to local JSON files")
 
     # Handle --all mode
-    if getattr(args, 'all', False):
+    if getattr(args, "all", False):
         try:
             workspace_config = load_config()
         except FileNotFoundError as e:
@@ -52,7 +52,9 @@ def main():
 
         if not workspace_config.environments:
             print("[!] No environments configured in workspace")
-            print("    Run 'firesync env add <name> --key-file=<path>' to add an environment")
+            print(
+                "    Run 'firesync env add <name> --key-file=<path>' to add an environment"
+            )
             sys.exit(1)
 
         env_count = len(workspace_config.environments)

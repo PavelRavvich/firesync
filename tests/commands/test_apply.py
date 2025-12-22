@@ -19,16 +19,13 @@ class TestApplyResources(unittest.TestCase):
         resources = [
             {"name": "resource1"},
             {"name": "resource2"},
-            {"name": "resource3"}
+            {"name": "resource3"},
         ]
         self.mock_build_command.return_value = ["gcloud", "command"]
         self.mock_client.run_command_tolerant.return_value = True
 
         count = firestore_apply.apply_resources(
-            self.mock_client,
-            resources,
-            self.mock_build_command,
-            "test resource"
+            self.mock_client, resources, self.mock_build_command, "test resource"
         )
 
         self.assertEqual(count, 3)
@@ -40,17 +37,14 @@ class TestApplyResources(unittest.TestCase):
         resources = [
             {"name": "resource1"},
             {"name": "resource2"},
-            {"name": "resource3"}
+            {"name": "resource3"},
         ]
         self.mock_build_command.return_value = ["gcloud", "command"]
         # First succeeds, second fails, third succeeds
         self.mock_client.run_command_tolerant.side_effect = [True, False, True]
 
         count = firestore_apply.apply_resources(
-            self.mock_client,
-            resources,
-            self.mock_build_command,
-            "test resource"
+            self.mock_client, resources, self.mock_build_command, "test resource"
         )
 
         self.assertEqual(count, 2)
@@ -58,11 +52,7 @@ class TestApplyResources(unittest.TestCase):
 
     def test_apply_resources_build_command_error(self):
         """Test handling of build_command errors."""
-        resources = [
-            {"name": "resource1"},
-            {"name": "invalid"},
-            {"name": "resource3"}
-        ]
+        resources = [{"name": "resource1"}, {"name": "invalid"}, {"name": "resource3"}]
 
         def build_cmd(resource):
             if resource["name"] == "invalid":
@@ -72,12 +62,9 @@ class TestApplyResources(unittest.TestCase):
         self.mock_build_command.side_effect = build_cmd
         self.mock_client.run_command_tolerant.return_value = True
 
-        with patch('builtins.print'):  # Suppress print output
+        with patch("builtins.print"):  # Suppress print output
             count = firestore_apply.apply_resources(
-                self.mock_client,
-                resources,
-                self.mock_build_command,
-                "test resource"
+                self.mock_client, resources, self.mock_build_command, "test resource"
             )
 
         self.assertEqual(count, 2)
@@ -87,10 +74,7 @@ class TestApplyResources(unittest.TestCase):
     def test_apply_resources_empty_list(self):
         """Test applying empty resource list."""
         count = firestore_apply.apply_resources(
-            self.mock_client,
-            [],
-            self.mock_build_command,
-            "test resource"
+            self.mock_client, [], self.mock_build_command, "test resource"
         )
 
         self.assertEqual(count, 0)

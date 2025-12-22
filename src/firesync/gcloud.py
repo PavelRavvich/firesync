@@ -58,7 +58,7 @@ class GCloudClient:
             "activate-service-account",
             self.config.service_account,
             f"--key-file={self.config.key_file}",
-            f"--project={self.config.project_id}"
+            f"--project={self.config.project_id}",
         ]
 
         logger.debug(f"Running: {' '.join(cmd)}")
@@ -72,10 +72,7 @@ class GCloudClient:
         logger.info("Service account activated successfully")
 
     def run_command(
-        self,
-        cmd: List[str],
-        capture_json: bool = False,
-        quiet: bool = False
+        self, cmd: List[str], capture_json: bool = False, quiet: bool = False
     ) -> Optional[Any]:
         """
         Execute a gcloud command.
@@ -120,11 +117,7 @@ class GCloudClient:
 
         return None
 
-    def run_command_tolerant(
-        self,
-        cmd: List[str],
-        quiet: bool = True
-    ) -> bool:
+    def run_command_tolerant(self, cmd: List[str], quiet: bool = True) -> bool:
         """
         Execute a gcloud command with error tolerance (for apply operations).
 
@@ -183,18 +176,19 @@ class GCloudClient:
         """
         self.activate_service_account()
 
-        full_cmd = [
-            self.gcloud_bin
-        ] + cmd + [
-            "--format=json",
-            f"--project={self.config.project_id}"
-        ]
+        full_cmd = (
+            [self.gcloud_bin]
+            + cmd
+            + ["--format=json", f"--project={self.config.project_id}"]
+        )
 
         logger.debug(f"Exporting to {output_path}: {' '.join(full_cmd)}")
         print(f"[+] Exporting {output_path.name}")
 
         with open(output_path, "w", encoding="utf-8") as f:
-            result = subprocess.run(full_cmd, stdout=f, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                full_cmd, stdout=f, stderr=subprocess.PIPE, text=True
+            )
 
         if result.returncode != 0:
             print(f"[!] Export failed: {result.stderr.strip()}")
@@ -204,12 +198,18 @@ class GCloudClient:
 
     def list_composite_indexes(self) -> List[Dict[str, Any]]:
         """List all composite indexes."""
-        return self.run_command(["firestore", "indexes", "composite", "list"], capture_json=True)
+        return self.run_command(
+            ["firestore", "indexes", "composite", "list"], capture_json=True
+        )
 
     def list_field_indexes(self) -> List[Dict[str, Any]]:
         """List all single-field indexes."""
-        return self.run_command(["firestore", "indexes", "fields", "list"], capture_json=True)
+        return self.run_command(
+            ["firestore", "indexes", "fields", "list"], capture_json=True
+        )
 
     def list_ttl_policies(self) -> List[Dict[str, Any]]:
         """List all TTL policies."""
-        return self.run_command(["firestore", "fields", "ttls", "list"], capture_json=True)
+        return self.run_command(
+            ["firestore", "fields", "ttls", "list"], capture_json=True
+        )

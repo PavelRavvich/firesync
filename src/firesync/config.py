@@ -24,7 +24,7 @@ class FiresyncConfig:
         cls,
         key_file: Optional[str] = None,
         key_env: Optional[str] = None,
-        schema_dir: str = "firestore_schema"
+        schema_dir: str = "firestore_schema",
     ) -> "FiresyncConfig":
         """
         Create configuration from command-line arguments.
@@ -59,13 +59,12 @@ class FiresyncConfig:
             service_account=service_account,
             key_file=actual_key_file,
             schema_dir=schema_path,
-            _temp_key_file=temp_file
+            _temp_key_file=temp_file,
         )
 
     @staticmethod
     def _load_key(
-        key_file: Optional[str],
-        key_env: Optional[str]
+        key_file: Optional[str], key_env: Optional[str]
     ) -> Tuple[dict, Path, Optional[str]]:
         """
         Load key from file or environment variable.
@@ -91,7 +90,9 @@ class FiresyncConfig:
             key_file_path = Path(key_file)
             if not key_file_path.exists():
                 print(f"[!] Key file not found: {key_file_path}")
-                print(f"[!] Please ensure the service account key exists at: {key_file_path.resolve()}")
+                print(
+                    f"[!] Please ensure the service account key exists at: {key_file_path.resolve()}"
+                )
                 sys.exit(1)
 
             try:
@@ -113,14 +114,16 @@ class FiresyncConfig:
 
             # Try to detect if it's a file path or JSON
             # If it starts with '{' it's likely JSON, otherwise try as file path first
-            is_json = env_value.strip().startswith('{')
+            is_json = env_value.strip().startswith("{")
 
             if not is_json:
                 # Try to treat as file path first
                 potential_file = Path(env_value)
                 if potential_file.exists() and potential_file.is_file():
                     try:
-                        key_data = json.loads(potential_file.read_text(encoding="utf-8"))
+                        key_data = json.loads(
+                            potential_file.read_text(encoding="utf-8")
+                        )
                         return key_data, potential_file.resolve(), None
                     except json.JSONDecodeError:
                         # Not a valid JSON file, fall through to try parsing as JSON string
@@ -130,14 +133,18 @@ class FiresyncConfig:
             try:
                 key_data = json.loads(env_value)
             except json.JSONDecodeError as e:
-                print(f"[!] Environment variable {key_env} is neither a valid file path nor valid JSON")
+                print(
+                    f"[!] Environment variable {key_env} is neither a valid file path nor valid JSON"
+                )
                 print(f"[!] JSON parse error: {e}")
                 sys.exit(1)
 
             # Create temporary file for gcloud to use
             try:
-                temp_fd, temp_path = tempfile.mkstemp(suffix=".json", prefix="firesync-key-")
-                with os.fdopen(temp_fd, 'w') as f:
+                temp_fd, temp_path = tempfile.mkstemp(
+                    suffix=".json", prefix="firesync-key-"
+                )
+                with os.fdopen(temp_fd, "w") as f:
                     json.dump(key_data, f)
                 return key_data, Path(temp_path), temp_path
             except Exception as e:

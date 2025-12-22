@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """Manage FireSync workspace environments."""
 
-import sys
 import argparse
+import sys
 from pathlib import Path
 
-
+from ..logger import setup_logging
 from ..workspace import (
-    load_config,
     add_environment,
+    load_config,
     remove_environment,
 )
-from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()
@@ -24,7 +23,9 @@ def cmd_list(args):
 
         if not config.environments:
             print("No environments configured.")
-            print(f"\nRun 'firesync env add <name> --key-file=<path>' to add an environment.")
+            print(
+                f"\nRun 'firesync env add <name> --key-file=<path>' to add an environment."
+            )
             return
 
         print(f"\nEnvironments in {config.config_path}:\n")
@@ -108,7 +109,7 @@ def cmd_add(args):
             env_name=args.name,
             key_file=args.key_file,
             key_env=args.key_env,
-            description=args.description
+            description=args.description,
         )
 
         print(f"\n[+] Environment '{args.name}' added successfully")
@@ -156,7 +157,7 @@ def cmd_remove(args):
                 print(f"  Key env:  {env_config.key_env}")
 
             response = input("\nType 'yes' to confirm: ")
-            if response.lower() != 'yes':
+            if response.lower() != "yes":
                 print("Cancelled.")
                 return
 
@@ -180,49 +181,61 @@ def cmd_remove(args):
 def main():
     """Main entry point for firestore_env command."""
     parser = argparse.ArgumentParser(
-        description='Manage FireSync workspace environments'
+        description="Manage FireSync workspace environments"
     )
 
-    subparsers = parser.add_subparsers(dest='subcommand', help='Environment management commands')
+    subparsers = parser.add_subparsers(
+        dest="subcommand", help="Environment management commands"
+    )
 
     # List command
     list_parser = subparsers.add_parser(
-        'list',
-        help='List all configured environments',
-        description='Display all environments from config.yaml with their credentials and descriptions'
+        "list",
+        help="List all configured environments",
+        description="Display all environments from config.yaml with their credentials and descriptions",
     )
     list_parser.set_defaults(func=cmd_list)
 
     # Show command
     show_parser = subparsers.add_parser(
-        'show',
-        help='Show details of a specific environment',
-        description='Display detailed information about an environment including credentials, schema directory, and status'
+        "show",
+        help="Show details of a specific environment",
+        description="Display detailed information about an environment including credentials, schema directory, and status",
     )
-    show_parser.add_argument('name', help='Environment name (e.g., dev, staging, prod)')
+    show_parser.add_argument("name", help="Environment name (e.g., dev, staging, prod)")
     show_parser.set_defaults(func=cmd_show)
 
     # Add command
     add_parser = subparsers.add_parser(
-        'add',
-        help='Add new environment to workspace',
-        description='Add a new environment to config.yaml. Requires either --key-file or --key-env for GCP authentication.'
+        "add",
+        help="Add new environment to workspace",
+        description="Add a new environment to config.yaml. Requires either --key-file or --key-env for GCP authentication.",
     )
-    add_parser.add_argument('name', help='Environment name (e.g., dev, staging, prod)')
+    add_parser.add_argument("name", help="Environment name (e.g., dev, staging, prod)")
     add_key_group = add_parser.add_mutually_exclusive_group(required=True)
-    add_key_group.add_argument('--key-file', help='Path to GCP service account key file (relative to config.yaml)')
-    add_key_group.add_argument('--key-env', help='Environment variable name containing GCP key JSON or path to key file')
-    add_parser.add_argument('--description', help='Optional description of the environment')
+    add_key_group.add_argument(
+        "--key-file",
+        help="Path to GCP service account key file (relative to config.yaml)",
+    )
+    add_key_group.add_argument(
+        "--key-env",
+        help="Environment variable name containing GCP key JSON or path to key file",
+    )
+    add_parser.add_argument(
+        "--description", help="Optional description of the environment"
+    )
     add_parser.set_defaults(func=cmd_add)
 
     # Remove command
     remove_parser = subparsers.add_parser(
-        'remove',
-        help='Remove environment from workspace',
-        description='Remove an environment from config.yaml. Requires confirmation unless --force is used.'
+        "remove",
+        help="Remove environment from workspace",
+        description="Remove an environment from config.yaml. Requires confirmation unless --force is used.",
     )
-    remove_parser.add_argument('name', help='Environment name to remove')
-    remove_parser.add_argument('--force', '-f', action='store_true', help='Skip confirmation prompt')
+    remove_parser.add_argument("name", help="Environment name to remove")
+    remove_parser.add_argument(
+        "--force", "-f", action="store_true", help="Skip confirmation prompt"
+    )
     remove_parser.set_defaults(func=cmd_remove)
 
     args = parser.parse_args()

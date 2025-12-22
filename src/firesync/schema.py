@@ -18,11 +18,7 @@ class SchemaFile:
     @classmethod
     def all_files(cls) -> List[str]:
         """Return list of all schema file names."""
-        return [
-            cls.COMPOSITE_INDEXES,
-            cls.FIELD_INDEXES,
-            cls.TTL_POLICIES
-        ]
+        return [cls.COMPOSITE_INDEXES, cls.FIELD_INDEXES, cls.TTL_POLICIES]
 
 
 def load_schema_file(path: Path) -> List[Dict[str, Any]]:
@@ -114,9 +110,9 @@ def validate_composite_index(index: Dict[str, Any]) -> bool:
     """
     # Must have collection identifier
     has_collection = bool(
-        index.get("collectionGroup") or
-        index.get("collectionGroupId") or
-        "/collectionGroups/" in index.get("name", "")
+        index.get("collectionGroup")
+        or index.get("collectionGroupId")
+        or "/collectionGroups/" in index.get("name", "")
     )
 
     # Must have fields
@@ -125,9 +121,9 @@ def validate_composite_index(index: Dict[str, Any]) -> bool:
 
     # Each field must have fieldPath and order/arrayConfig
     valid_fields = all(
-        isinstance(f, dict) and
-        "fieldPath" in f and
-        ("order" in f or "arrayConfig" in f)
+        isinstance(f, dict)
+        and "fieldPath" in f
+        and ("order" in f or "arrayConfig" in f)
         for f in fields
     )
 
@@ -151,7 +147,9 @@ def validate_field_index(index: Dict[str, Any]) -> bool:
     """
     has_collection = bool(index.get("collectionGroupId"))
     has_field_path = bool(index.get("fieldPath"))
-    has_indexes = isinstance(index.get("indexes"), list) and len(index.get("indexes", [])) > 0
+    has_indexes = (
+        isinstance(index.get("indexes"), list) and len(index.get("indexes", [])) > 0
+    )
 
     is_valid = has_collection and has_field_path and has_indexes
 
@@ -173,16 +171,13 @@ def validate_ttl_policy(policy: Dict[str, Any]) -> bool:
     """
     # Must have collection identifier
     has_collection = bool(
-        policy.get("collectionGroup") or
-        policy.get("collectionGroupId") or
-        "/collectionGroups/" in policy.get("name", "")
+        policy.get("collectionGroup")
+        or policy.get("collectionGroupId")
+        or "/collectionGroups/" in policy.get("name", "")
     )
 
     # Must have field identifier
-    has_field = bool(
-        policy.get("field") or
-        "/fields/" in policy.get("name", "")
-    )
+    has_field = bool(policy.get("field") or "/fields/" in policy.get("name", ""))
 
     # Must have ttlConfig with state
     ttl_config = policy.get("ttlConfig", {})

@@ -13,8 +13,8 @@ def setup_logging():
     to set appropriate logging level.
     """
     # Determine logging level from environment
-    verbose = os.environ.get('FIRESYNC_VERBOSE') == '1'
-    quiet = os.environ.get('FIRESYNC_QUIET') == '1'
+    verbose = os.environ.get("FIRESYNC_VERBOSE") == "1"
+    quiet = os.environ.get("FIRESYNC_QUIET") == "1"
 
     if verbose:
         level = logging.DEBUG
@@ -27,7 +27,7 @@ def setup_logging():
     logging.basicConfig(
         level=level,
         format="%(levelname)s: %(message)s",
-        force=True  # Override any existing configuration
+        force=True,  # Override any existing configuration
     )
 
     return logging.getLogger(__name__)

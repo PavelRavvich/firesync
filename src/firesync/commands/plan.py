@@ -2,11 +2,12 @@
 """Compare local Firestore schema against remote state."""
 
 import sys
-from typing import Callable, List, Any, Dict
 from pathlib import Path
+from typing import Any, Callable, Dict, List
 
 from ..cli import parse_plan_args, setup_client
 from ..gcloud import GCloudClient
+from ..logger import setup_logging
 from ..operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
@@ -14,7 +15,6 @@ from ..operations import (
 )
 from ..schema import SchemaFile, load_schema_file
 from ..workspace import load_config
-from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()
@@ -25,7 +25,7 @@ def compare_and_display(
     schema_file: Path,
     fetch_remote: Callable[[], List[Dict[str, Any]]],
     compare_func: Callable[[List, List], Dict],
-    format_func: Callable[[Any], str]
+    format_func: Callable[[Any], str],
 ) -> None:
     """
     Compare local and remote resources and display differences.
@@ -65,7 +65,7 @@ def compare_local_schemas(
     source_schema_file: Path,
     target_schema_file: Path,
     compare_func: Callable[[List, List], Dict],
-    format_func: Callable[[Any], str]
+    format_func: Callable[[Any], str],
 ) -> None:
     """
     Compare two local schema files (migration mode).
@@ -134,7 +134,7 @@ def main():
             source_schema_dir / SchemaFile.COMPOSITE_INDEXES,
             target_schema_dir / SchemaFile.COMPOSITE_INDEXES,
             CompositeIndexOperations.compare,
-            lambda item: f"{item[0]} {item[1]} {' | '.join(item[2])}"
+            lambda item: f"{item[0]} {item[1]} {' | '.join(item[2])}",
         )
 
         # Compare Single-Field Indexes
@@ -143,7 +143,7 @@ def main():
             source_schema_dir / SchemaFile.FIELD_INDEXES,
             target_schema_dir / SchemaFile.FIELD_INDEXES,
             FieldIndexOperations.compare,
-            lambda item: f"FIELD INDEX: ({item[0]}, {item[1]}) => {item[2]}"
+            lambda item: f"FIELD INDEX: ({item[0]}, {item[1]}) => {item[2]}",
         )
 
         # Compare TTL Policies
@@ -152,7 +152,7 @@ def main():
             source_schema_dir / SchemaFile.TTL_POLICIES,
             target_schema_dir / SchemaFile.TTL_POLICIES,
             TTLPolicyOperations.compare,
-            format_ttl
+            format_ttl,
         )
 
         print("\n✔️ Migration plan complete.")
@@ -160,8 +160,7 @@ def main():
     else:
         # Standard mode: compare local vs remote
         config, client = setup_client(
-            env=args.env,
-            schema_dir=getattr(args, 'schema_dir', None)
+            env=args.env, schema_dir=getattr(args, "schema_dir", None)
         )
 
         # Format functions
@@ -177,7 +176,7 @@ def main():
             config.schema_dir / SchemaFile.COMPOSITE_INDEXES,
             client.list_composite_indexes,
             CompositeIndexOperations.compare,
-            lambda item: f"{item[0]} {item[1]} {' | '.join(item[2])}"
+            lambda item: f"{item[0]} {item[1]} {' | '.join(item[2])}",
         )
 
         # Compare Single-Field Indexes
@@ -186,7 +185,7 @@ def main():
             config.schema_dir / SchemaFile.FIELD_INDEXES,
             client.list_field_indexes,
             FieldIndexOperations.compare,
-            lambda item: f"FIELD INDEX: ({item[0]}, {item[1]}) => {item[2]}"
+            lambda item: f"FIELD INDEX: ({item[0]}, {item[1]}) => {item[2]}",
         )
 
         # Compare TTL Policies
@@ -195,7 +194,7 @@ def main():
             config.schema_dir / SchemaFile.TTL_POLICIES,
             client.list_ttl_policies,
             TTLPolicyOperations.compare,
-            format_ttl
+            format_ttl,
         )
 
         print("\n✔️ Plan complete.")

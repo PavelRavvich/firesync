@@ -2,20 +2,20 @@
 """Apply local Firestore schema to remote GCP project."""
 
 import sys
-from typing import Callable, List, Dict, Any
 from pathlib import Path
+from typing import Any, Callable, Dict, List
 
 from ..cli import parse_apply_args, setup_client
 from ..gcloud import GCloudClient
+from ..logger import setup_logging
 from ..operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
     TTLPolicyOperations,
 )
 from ..schema import SchemaFile, load_schema_file
+from ..ui import calculate_changes, confirm_apply
 from ..workspace import load_config
-from ..ui import confirm_apply, calculate_changes
-from ..logger import setup_logging
 
 # Configure logging based on environment variables
 logger = setup_logging()
@@ -25,7 +25,7 @@ def apply_resources(
     client: GCloudClient,
     resources: List[Dict[str, Any]],
     build_command: Callable[[Dict[str, Any]], List[str]],
-    resource_type: str
+    resource_type: str,
 ) -> int:
     """
     Apply resources to Firestore with error handling.
@@ -126,7 +126,7 @@ def apply_schema_from_directory(client: GCloudClient, schema_dir: Path):
             client,
             local_composite,
             CompositeIndexOperations.build_create_command,
-            "composite index"
+            "composite index",
         )
         print(f"[~] Processed {success_count}/{len(local_composite)} composite indexes")
 
@@ -189,10 +189,7 @@ def apply_schema_from_directory(client: GCloudClient, schema_dir: Path):
             raise ValueError("Expected a list in ttl-policies.json")
 
         success_count = apply_resources(
-            client,
-            local_ttl,
-            TTLPolicyOperations.build_create_command,
-            "TTL policy"
+            client, local_ttl, TTLPolicyOperations.build_create_command, "TTL policy"
         )
         print(f"[~] Processed {success_count}/{len(local_ttl)} TTL policies")
 
@@ -223,7 +220,7 @@ def main():
         print(f"   Source schema: {source_schema_dir}")
 
         # Set up client for target environment
-        dry_run = getattr(args, 'dry_run', False)
+        dry_run = getattr(args, "dry_run", False)
         _, target_client = setup_client(env=args.to_env, dry_run=dry_run)
 
         # Collect changes for confirmation (skip if dry-run)
@@ -231,8 +228,10 @@ def main():
             changes = collect_all_diffs(target_client, source_schema_dir)
 
             # Ask for confirmation
-            auto_approve = getattr(args, 'auto_approve', False)
-            if not confirm_apply(changes, target_client.config.project_id, args.to_env, auto_approve):
+            auto_approve = getattr(args, "auto_approve", False)
+            if not confirm_apply(
+                changes, target_client.config.project_id, args.to_env, auto_approve
+            ):
                 print("[!] Operation cancelled")
                 sys.exit(0)
         else:
@@ -241,15 +240,15 @@ def main():
         # Apply source schema to target environment
         apply_schema_from_directory(target_client, source_schema_dir)
 
-        print(f"\n[+] Migration applied: {args.from_env} schema -> {args.to_env} Firestore")
+        print(
+            f"\n[+] Migration applied: {args.from_env} schema -> {args.to_env} Firestore"
+        )
 
     else:
         # Standard mode: apply local schema to remote
-        dry_run = getattr(args, 'dry_run', False)
+        dry_run = getattr(args, "dry_run", False)
         config, client = setup_client(
-            env=args.env,
-            schema_dir=getattr(args, 'schema_dir', None),
-            dry_run=dry_run
+            env=args.env, schema_dir=getattr(args, "schema_dir", None), dry_run=dry_run
         )
 
         # Collect changes for confirmation (skip if dry-run)
@@ -257,7 +256,7 @@ def main():
             changes = collect_all_diffs(client, config.schema_dir)
 
             # Ask for confirmation
-            auto_approve = getattr(args, 'auto_approve', False)
+            auto_approve = getattr(args, "auto_approve", False)
             if not confirm_apply(changes, config.project_id, args.env, auto_approve):
                 print("[!] Operation cancelled")
                 sys.exit(0)

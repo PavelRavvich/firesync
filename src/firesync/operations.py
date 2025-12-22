@@ -43,8 +43,7 @@ class CompositeIndexOperations:
 
     @staticmethod
     def compare(
-        local: List[Dict[str, Any]],
-        remote: List[Dict[str, Any]]
+        local: List[Dict[str, Any]], remote: List[Dict[str, Any]]
     ) -> Dict[str, Set[Tuple]]:
         """
         Compare local and remote composite indexes.
@@ -68,7 +67,7 @@ class CompositeIndexOperations:
         return {
             "create": local_set - remote_set,
             "delete": remote_set - local_set,
-            "update": set()  # Composite indexes don't support updates
+            "update": set(),  # Composite indexes don't support updates
         }
 
     @staticmethod
@@ -93,9 +92,12 @@ class CompositeIndexOperations:
             raise ValueError(f"No fields in composite index: {index}")
 
         cmd = [
-            "firestore", "indexes", "composite", "create",
+            "firestore",
+            "indexes",
+            "composite",
+            "create",
             f"--collection-group={collection}",
-            f"--query-scope={query_scope}"
+            f"--query-scope={query_scope}",
         ]
 
         for field in fields:
@@ -117,8 +119,7 @@ class FieldIndexOperations:
 
     @staticmethod
     def compare(
-        local: List[Dict[str, Any]],
-        remote: List[Dict[str, Any]]
+        local: List[Dict[str, Any]], remote: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Compare local and remote field indexes.
@@ -182,16 +183,11 @@ class FieldIndexOperations:
             for value in remote_map[key] - local_map[key]:
                 delete_list.append((*key, value))
 
-        return {
-            "create": create_list,
-            "delete": delete_list
-        }
+        return {"create": create_list, "delete": delete_list}
 
     @staticmethod
     def build_create_command(
-        collection: str,
-        field_path: str,
-        index_value: str
+        collection: str, field_path: str, index_value: str
     ) -> List[str]:
         """
         Build gcloud command to create field index.
@@ -214,10 +210,13 @@ class FieldIndexOperations:
             index_param = f"order={index_value}"
 
         return [
-            "firestore", "indexes", "fields", "update",
+            "firestore",
+            "indexes",
+            "fields",
+            "update",
             field_path,
             f"--collection-group={collection}",
-            f"--index={index_param}"
+            f"--index={index_param}",
         ]
 
 
@@ -226,8 +225,7 @@ class TTLPolicyOperations:
 
     @staticmethod
     def compare(
-        local: List[Dict[str, Any]],
-        remote: List[Dict[str, Any]]
+        local: List[Dict[str, Any]], remote: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Compare local and remote TTL policies.
@@ -281,11 +279,7 @@ class TTLPolicyOperations:
             if local_map[key] != remote_map[key]:
                 update_list.append((*key, remote_map[key], local_map[key]))
 
-        return {
-            "create": create_list,
-            "delete": delete_list,
-            "update": update_list
-        }
+        return {"create": create_list, "delete": delete_list, "update": update_list}
 
     @staticmethod
     def build_create_command(policy: Dict[str, Any]) -> List[str]:
@@ -308,8 +302,11 @@ class TTLPolicyOperations:
         enable_flag = "--enable-ttl" if ttl_state == "ACTIVE" else "--disable-ttl"
 
         return [
-            "firestore", "fields", "ttls", "update",
+            "firestore",
+            "fields",
+            "ttls",
+            "update",
             field,
             f"--collection-group={collection}",
-            enable_flag
+            enable_flag,
         ]

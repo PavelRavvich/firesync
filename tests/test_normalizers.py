@@ -29,14 +29,16 @@ class TestNormalizeCollectionName(unittest.TestCase):
 
     def test_from_resource_name(self):
         """Test extraction from resource name path."""
-        item = {"name": "projects/test/databases/(default)/collectionGroups/products/indexes/1"}
+        item = {
+            "name": "projects/test/databases/(default)/collectionGroups/products/indexes/1"
+        }
         self.assertEqual(normalize_collection_name(item), "products")
 
     def test_prefers_direct_field(self):
         """Test that direct field is preferred over name parsing."""
         item = {
             "collectionGroup": "users",
-            "name": "projects/test/databases/(default)/collectionGroups/orders/indexes/1"
+            "name": "projects/test/databases/(default)/collectionGroups/orders/indexes/1",
         }
         self.assertEqual(normalize_collection_name(item), "users")
 
@@ -65,14 +67,16 @@ class TestNormalizeFieldPath(unittest.TestCase):
 
     def test_from_resource_name(self):
         """Test extraction from resource name path."""
-        item = {"name": "projects/test/databases/(default)/collectionGroups/users/fields/timestamp"}
+        item = {
+            "name": "projects/test/databases/(default)/collectionGroups/users/fields/timestamp"
+        }
         self.assertEqual(normalize_field_path(item), "timestamp")
 
     def test_prefers_direct_field(self):
         """Test that direct field is preferred over name parsing."""
         item = {
             "fieldPath": "name",
-            "name": "projects/test/databases/(default)/collectionGroups/users/fields/email"
+            "name": "projects/test/databases/(default)/collectionGroups/users/fields/email",
         }
         self.assertEqual(normalize_field_path(item), "name")
 
@@ -118,7 +122,7 @@ class TestNormalizeFields(unittest.TestCase):
         """Test normalization and sorting of multiple fields."""
         fields = [
             {"fieldPath": "name", "order": "ASCENDING"},
-            {"fieldPath": "age", "order": "DESCENDING"}
+            {"fieldPath": "age", "order": "DESCENDING"},
         ]
         result = normalize_fields(fields)
         self.assertEqual(result, ["age:descending", "name:ascending"])

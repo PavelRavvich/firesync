@@ -144,8 +144,8 @@ class TestValidateCompositeIndex(unittest.TestCase):
             "queryScope": "COLLECTION",
             "fields": [
                 {"fieldPath": "name", "order": "ASCENDING"},
-                {"fieldPath": "age", "order": "DESCENDING"}
-            ]
+                {"fieldPath": "age", "order": "DESCENDING"},
+            ],
         }
         self.assertTrue(validate_composite_index(index))
 
@@ -153,7 +153,7 @@ class TestValidateCompositeIndex(unittest.TestCase):
         """Test validation with collectionGroupId field."""
         index = {
             "collectionGroupId": "orders",
-            "fields": [{"fieldPath": "total", "order": "ASCENDING"}]
+            "fields": [{"fieldPath": "total", "order": "ASCENDING"}],
         }
         self.assertTrue(validate_composite_index(index))
 
@@ -161,15 +161,13 @@ class TestValidateCompositeIndex(unittest.TestCase):
         """Test validation with name field."""
         index = {
             "name": "projects/test/collectionGroups/products/indexes/1",
-            "fields": [{"fieldPath": "price", "order": "DESCENDING"}]
+            "fields": [{"fieldPath": "price", "order": "DESCENDING"}],
         }
         self.assertTrue(validate_composite_index(index))
 
     def test_missing_collection(self):
         """Test validation fails without collection."""
-        index = {
-            "fields": [{"fieldPath": "name", "order": "ASCENDING"}]
-        }
+        index = {"fields": [{"fieldPath": "name", "order": "ASCENDING"}]}
         self.assertFalse(validate_composite_index(index))
 
     def test_missing_fields(self):
@@ -186,7 +184,7 @@ class TestValidateCompositeIndex(unittest.TestCase):
         """Test validation fails with invalid field."""
         index = {
             "collectionGroup": "users",
-            "fields": [{"fieldPath": "name"}]  # Missing order/arrayConfig
+            "fields": [{"fieldPath": "name"}],  # Missing order/arrayConfig
         }
         self.assertFalse(validate_composite_index(index))
 
@@ -199,41 +197,28 @@ class TestValidateFieldIndex(unittest.TestCase):
         index = {
             "collectionGroupId": "users",
             "fieldPath": "email",
-            "indexes": [{"order": "ASCENDING"}]
+            "indexes": [{"order": "ASCENDING"}],
         }
         self.assertTrue(validate_field_index(index))
 
     def test_missing_collection(self):
         """Test validation fails without collection."""
-        index = {
-            "fieldPath": "email",
-            "indexes": [{"order": "ASCENDING"}]
-        }
+        index = {"fieldPath": "email", "indexes": [{"order": "ASCENDING"}]}
         self.assertFalse(validate_field_index(index))
 
     def test_missing_field_path(self):
         """Test validation fails without fieldPath."""
-        index = {
-            "collectionGroupId": "users",
-            "indexes": [{"order": "ASCENDING"}]
-        }
+        index = {"collectionGroupId": "users", "indexes": [{"order": "ASCENDING"}]}
         self.assertFalse(validate_field_index(index))
 
     def test_missing_indexes(self):
         """Test validation fails without indexes."""
-        index = {
-            "collectionGroupId": "users",
-            "fieldPath": "email"
-        }
+        index = {"collectionGroupId": "users", "fieldPath": "email"}
         self.assertFalse(validate_field_index(index))
 
     def test_empty_indexes(self):
         """Test validation fails with empty indexes."""
-        index = {
-            "collectionGroupId": "users",
-            "fieldPath": "email",
-            "indexes": []
-        }
+        index = {"collectionGroupId": "users", "fieldPath": "email", "indexes": []}
         self.assertFalse(validate_field_index(index))
 
 
@@ -245,7 +230,7 @@ class TestValidateTTLPolicy(unittest.TestCase):
         policy = {
             "collectionGroup": "sessions",
             "field": "expiresAt",
-            "ttlConfig": {"state": "ACTIVE"}
+            "ttlConfig": {"state": "ACTIVE"},
         }
         self.assertTrue(validate_ttl_policy(policy))
 
@@ -253,42 +238,28 @@ class TestValidateTTLPolicy(unittest.TestCase):
         """Test validation with name field."""
         policy = {
             "name": "projects/test/collectionGroups/logs/fields/timestamp",
-            "ttlConfig": {"state": "ACTIVE"}
+            "ttlConfig": {"state": "ACTIVE"},
         }
         self.assertTrue(validate_ttl_policy(policy))
 
     def test_valid_policy_with_state(self):
         """Test validation with direct state field."""
-        policy = {
-            "collectionGroup": "temp",
-            "field": "createdAt",
-            "state": "ACTIVE"
-        }
+        policy = {"collectionGroup": "temp", "field": "createdAt", "state": "ACTIVE"}
         self.assertTrue(validate_ttl_policy(policy))
 
     def test_missing_collection(self):
         """Test validation fails without collection."""
-        policy = {
-            "field": "expiresAt",
-            "ttlConfig": {"state": "ACTIVE"}
-        }
+        policy = {"field": "expiresAt", "ttlConfig": {"state": "ACTIVE"}}
         self.assertFalse(validate_ttl_policy(policy))
 
     def test_missing_field(self):
         """Test validation fails without field."""
-        policy = {
-            "collectionGroup": "sessions",
-            "ttlConfig": {"state": "ACTIVE"}
-        }
+        policy = {"collectionGroup": "sessions", "ttlConfig": {"state": "ACTIVE"}}
         self.assertFalse(validate_ttl_policy(policy))
 
     def test_missing_state(self):
         """Test validation fails without state."""
-        policy = {
-            "collectionGroup": "sessions",
-            "field": "expiresAt",
-            "ttlConfig": {}
-        }
+        policy = {"collectionGroup": "sessions", "field": "expiresAt", "ttlConfig": {}}
         self.assertFalse(validate_ttl_policy(policy))
 
 

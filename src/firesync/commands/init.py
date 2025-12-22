@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
 """Initialize FireSync workspace with config.yaml template."""
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
-
-from ..workspace import init_workspace, CONFIG_DIR_NAME
+from ..workspace import CONFIG_DIR_NAME, init_workspace
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def main():
     """Main entry point for firestore_init command."""
     import argparse
+
     parser = argparse.ArgumentParser(
-        description='Initialize FireSync workspace. Creates config.yaml for managing multiple environments.'
+        description="Initialize FireSync workspace. Creates config.yaml for managing multiple environments."
     )
     parser.parse_args()
 

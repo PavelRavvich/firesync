@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """Tests for environment management functions."""
 
+import os
+import shutil
 import sys
+import tempfile
+import unittest
 from pathlib import Path
 
-import unittest
-import tempfile
-import shutil
-import os
-
 from firesync.workspace import (
-    WorkspaceConfig,
-    EnvironmentConfig,
-    save_config,
-    add_environment,
-    remove_environment,
-    load_config,
     CONFIG_DIR_NAME,
     CONFIG_FILE_NAME,
+    EnvironmentConfig,
+    WorkspaceConfig,
+    add_environment,
+    load_config,
+    remove_environment,
+    save_config,
 )
 
 
@@ -43,7 +42,7 @@ class TestSaveConfig(unittest.TestCase):
             version=1,
             environments={"prod": env1, "dev": env2},
             schema_dir="schemas",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
 
         save_config(config)
@@ -61,16 +60,14 @@ class TestSaveConfig(unittest.TestCase):
     def test_save_config_with_description(self):
         """Test saving configuration with descriptions."""
         env1 = EnvironmentConfig(
-            name="prod",
-            key_file="keys/prod.json",
-            description="Production environment"
+            name="prod", key_file="keys/prod.json", description="Production environment"
         )
 
         config = WorkspaceConfig(
             version=1,
             environments={"prod": env1},
             schema_dir="schemas",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
 
         save_config(config)
@@ -99,7 +96,7 @@ class TestAddEnvironment(unittest.TestCase):
             version=1,
             environments={},
             schema_dir="schemas",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
         save_config(initial_config)
 
@@ -117,7 +114,7 @@ class TestAddEnvironment(unittest.TestCase):
                 env_name="production",
                 key_file="keys/prod.json",
                 description="Production environment",
-                config_path=self.config_path
+                config_path=self.config_path,
             )
 
             # Verify environment was added
@@ -138,7 +135,7 @@ class TestAddEnvironment(unittest.TestCase):
             env_name="staging",
             key_env="GCP_STAGING_KEY",
             description="Staging environment",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
 
         # Verify environment was added
@@ -151,11 +148,7 @@ class TestAddEnvironment(unittest.TestCase):
 
     def test_add_environment_without_description(self):
         """Test adding environment without description."""
-        add_environment(
-            env_name="dev",
-            key_env="DEV_KEY",
-            config_path=self.config_path
-        )
+        add_environment(env_name="dev", key_env="DEV_KEY", config_path=self.config_path)
 
         config = load_config(self.config_path)
         dev_env = config.environments["dev"]
@@ -164,9 +157,7 @@ class TestAddEnvironment(unittest.TestCase):
     def test_add_environment_already_exists(self):
         """Test that adding existing environment raises ValueError."""
         add_environment(
-            env_name="prod",
-            key_file="keys/prod.json",
-            config_path=self.config_path
+            env_name="prod", key_file="keys/prod.json", config_path=self.config_path
         )
 
         # Try to add again
@@ -174,7 +165,7 @@ class TestAddEnvironment(unittest.TestCase):
             add_environment(
                 env_name="prod",
                 key_file="keys/prod2.json",
-                config_path=self.config_path
+                config_path=self.config_path,
             )
         self.assertIn("already exists", str(ctx.exception))
 
@@ -183,9 +174,7 @@ class TestAddEnvironment(unittest.TestCase):
         non_existent = Path(self.temp_dir) / "nonexistent" / CONFIG_FILE_NAME
         with self.assertRaises(FileNotFoundError):
             add_environment(
-                env_name="test",
-                key_file="test.json",
-                config_path=non_existent
+                env_name="test", key_file="test.json", config_path=non_existent
             )
 
 
@@ -211,7 +200,7 @@ class TestRemoveEnvironment(unittest.TestCase):
             version=1,
             environments={"prod": env1, "staging": env2, "dev": env3},
             schema_dir="schemas",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
         save_config(initial_config)
 
@@ -280,7 +269,7 @@ class TestPathRecalculation(unittest.TestCase):
             version=1,
             environments={},
             schema_dir="schemas",
-            config_path=self.config_path
+            config_path=self.config_path,
         )
         save_config(initial_config)
 
@@ -293,7 +282,7 @@ class TestPathRecalculation(unittest.TestCase):
             add_environment(
                 env_name="prod",
                 key_file="../keys/prod.json",
-                config_path=self.config_path
+                config_path=self.config_path,
             )
 
             config = load_config(self.config_path)
@@ -326,7 +315,7 @@ class TestPathRecalculation(unittest.TestCase):
             add_environment(
                 env_name="prod",
                 key_file="../../keys/prod.json",
-                config_path=self.config_path
+                config_path=self.config_path,
             )
 
             config = load_config(self.config_path)

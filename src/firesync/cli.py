@@ -8,7 +8,9 @@ from .gcloud import GCloudClient
 from .workspace import load_config
 
 
-def _validate_migration_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+def _validate_migration_args(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> None:
     """
     Validate migration mode arguments.
 
@@ -56,7 +58,7 @@ def parse_pull_args(description: str) -> argparse.Namespace:
         "--all",
         "-a",
         action="store_true",
-        help="Export schemas from all environments defined in config.yaml"
+        help="Export schemas from all environments defined in config.yaml",
     )
 
     # Single environment
@@ -64,7 +66,7 @@ def parse_pull_args(description: str) -> argparse.Namespace:
         "--env",
         "-e",
         metavar="NAME",
-        help="Export schema from specific environment (e.g., dev, staging, prod)"
+        help="Export schema from specific environment (e.g., dev, staging, prod)",
     )
 
     return parser.parse_args()
@@ -91,13 +93,13 @@ def parse_plan_args(description: str) -> argparse.Namespace:
         "--from",
         metavar="SOURCE",
         dest="from_env",
-        help="Source environment (migration mode: compare SOURCE local schema)"
+        help="Source environment (migration mode: compare SOURCE local schema)",
     )
     parser.add_argument(
         "--to",
         metavar="TARGET",
         dest="to_env",
-        help="Target environment (migration mode: compare against TARGET local schema)"
+        help="Target environment (migration mode: compare against TARGET local schema)",
     )
 
     # Standard mode - single environment
@@ -105,7 +107,7 @@ def parse_plan_args(description: str) -> argparse.Namespace:
         "--env",
         "-e",
         metavar="NAME",
-        help="Compare local schema against remote Firestore (e.g., dev, staging, prod)"
+        help="Compare local schema against remote Firestore (e.g., dev, staging, prod)",
     )
 
     # Schema directory override
@@ -113,7 +115,7 @@ def parse_plan_args(description: str) -> argparse.Namespace:
         "--schema-dir",
         "-d",
         metavar="PATH",
-        help="Custom schema directory path (overrides workspace config)"
+        help="Custom schema directory path (overrides workspace config)",
     )
 
     args = parser.parse_args()
@@ -142,13 +144,13 @@ def parse_apply_args(description: str) -> argparse.Namespace:
         "--from",
         metavar="SOURCE",
         dest="from_env",
-        help="Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)"
+        help="Source environment (migration mode: read SOURCE local schema, apply to TARGET remote)",
     )
     parser.add_argument(
         "--to",
         metavar="TARGET",
         dest="to_env",
-        help="Target environment (migration mode: apply SOURCE schema to TARGET Firestore)"
+        help="Target environment (migration mode: apply SOURCE schema to TARGET Firestore)",
     )
 
     # Standard mode - single environment
@@ -156,7 +158,7 @@ def parse_apply_args(description: str) -> argparse.Namespace:
         "--env",
         "-e",
         metavar="NAME",
-        help="Apply local schema to remote Firestore (e.g., dev, staging, prod)"
+        help="Apply local schema to remote Firestore (e.g., dev, staging, prod)",
     )
 
     # Schema directory override
@@ -164,7 +166,7 @@ def parse_apply_args(description: str) -> argparse.Namespace:
         "--schema-dir",
         "-d",
         metavar="PATH",
-        help="Custom schema directory path (overrides workspace config)"
+        help="Custom schema directory path (overrides workspace config)",
     )
 
     # Auto-approve flag (skip confirmation)
@@ -172,14 +174,14 @@ def parse_apply_args(description: str) -> argparse.Namespace:
         "--auto-approve",
         "-y",
         action="store_true",
-        help="Skip confirmation prompt (useful for CI/CD)"
+        help="Skip confirmation prompt (useful for CI/CD)",
     )
 
     # Dry-run flag (show commands without executing)
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show gcloud commands that would be executed without running them"
+        help="Show gcloud commands that would be executed without running them",
     )
 
     args = parser.parse_args()
@@ -188,9 +190,7 @@ def parse_apply_args(description: str) -> argparse.Namespace:
 
 
 def setup_client(
-    env: str,
-    schema_dir: Optional[str] = None,
-    dry_run: bool = False
+    env: str, schema_dir: Optional[str] = None, dry_run: bool = False
 ) -> Tuple[FiresyncConfig, GCloudClient]:
     """
     Set up configuration and GCloud client from workspace environment.
@@ -231,9 +231,7 @@ def setup_client(
 
     # Create config
     config = FiresyncConfig.from_args(
-        key_file=actual_key_file,
-        key_env=actual_key_env,
-        schema_dir=actual_schema_dir
+        key_file=actual_key_file, key_env=actual_key_env, schema_dir=actual_schema_dir
     )
 
     config.display_info()

@@ -8,7 +8,7 @@ def confirm_apply(
     changes_summary: Dict[str, int],
     project_id: str,
     env_name: str,
-    auto_approve: bool = False
+    auto_approve: bool = False,
 ) -> bool:
     """
     Ask user for confirmation before applying changes to Firestore.
@@ -70,5 +70,5 @@ def calculate_changes(diff: Dict) -> Dict[str, int]:
     return {
         "create": len(diff.get("create", [])),
         "delete": len(diff.get("delete", [])),
-        "update": len(diff.get("update", []))
+        "update": len(diff.get("update", [])),
     }

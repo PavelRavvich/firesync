@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Tests for commands.init command."""
 
-import sys
-import unittest
-import tempfile
+import os
 import shutil
 import subprocess
-import os
+import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 
@@ -33,7 +33,7 @@ class TestFirestoreInit(unittest.TestCase):
             cwd=self.temp_dir,
             env=env,
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Check exit code
@@ -71,7 +71,7 @@ class TestFirestoreInit(unittest.TestCase):
             cwd=self.temp_dir,
             env=env,
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Check exit code

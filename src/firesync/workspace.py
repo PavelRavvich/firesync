@@ -22,6 +22,7 @@ CONFIG_FILE_NAME = "config.yaml"
 @dataclass
 class EnvironmentConfig:
     """Configuration for a single environment."""
+
     name: str
     key_file: Optional[str] = None
     key_env: Optional[str] = None
@@ -42,6 +43,7 @@ class EnvironmentConfig:
 @dataclass
 class WorkspaceConfig:
     """FireSync workspace configuration loaded from config.yaml."""
+
     version: int
     environments: Dict[str, EnvironmentConfig]
     schema_dir: str
@@ -148,7 +150,7 @@ def load_config(config_path: Optional[Path] = None) -> WorkspaceConfig:
 
     # Parse YAML
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             data = yaml.safe_load(f)
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in {config_path}: {e}")
@@ -157,12 +159,12 @@ def load_config(config_path: Optional[Path] = None) -> WorkspaceConfig:
         raise ValueError(f"Config must be a YAML dictionary, got {type(data).__name__}")
 
     # Validate version
-    version = data.get('version')
+    version = data.get("version")
     if version != 1:
         raise ValueError(f"Unsupported config version: {version}. Expected version 1.")
 
     # Validate environments
-    environments_data = data.get('environments')
+    environments_data = data.get("environments")
     if environments_data is None:
         environments_data = {}
     if not isinstance(environments_data, dict):
@@ -180,18 +182,20 @@ def load_config(config_path: Optional[Path] = None) -> WorkspaceConfig:
 
         env_config = EnvironmentConfig(
             name=env_name,
-            key_file=env_data.get('key_file'),
-            key_env=env_data.get('key_env'),
-            description=env_data.get('description')
+            key_file=env_data.get("key_file"),
+            key_env=env_data.get("key_env"),
+            description=env_data.get("description"),
         )
         environments[env_name] = env_config
 
     # Validate settings
-    settings = data.get('settings', {})
+    settings = data.get("settings", {})
     if not isinstance(settings, dict):
-        raise ValueError(f"'settings' must be a dictionary, got {type(settings).__name__}")
+        raise ValueError(
+            f"'settings' must be a dictionary, got {type(settings).__name__}"
+        )
 
-    schema_dir = settings.get('schema_dir', 'schemas')
+    schema_dir = settings.get("schema_dir", "schemas")
     if not isinstance(schema_dir, str):
         raise ValueError(
             f"'settings.schema_dir' must be a string, got {type(schema_dir).__name__}"
@@ -201,7 +205,7 @@ def load_config(config_path: Optional[Path] = None) -> WorkspaceConfig:
         version=version,
         environments=environments,
         schema_dir=schema_dir,
-        config_path=config_path
+        config_path=config_path,
     )
 
 
@@ -256,7 +260,7 @@ settings:
   schema_dir: schemas
 """
 
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         f.write(config_template)
 
     return config_path
@@ -274,26 +278,24 @@ def save_config(config: WorkspaceConfig) -> None:
     """
     # Build config dictionary
     data = {
-        'version': config.version,
-        'environments': {},
-        'settings': {
-            'schema_dir': config.schema_dir
-        }
+        "version": config.version,
+        "environments": {},
+        "settings": {"schema_dir": config.schema_dir},
     }
 
     # Add environments
     for env_name, env_config in config.environments.items():
         env_data = {}
         if env_config.key_file:
-            env_data['key_file'] = env_config.key_file
+            env_data["key_file"] = env_config.key_file
         if env_config.key_env:
-            env_data['key_env'] = env_config.key_env
+            env_data["key_env"] = env_config.key_env
         if env_config.description:
-            env_data['description'] = env_config.description
-        data['environments'][env_name] = env_data
+            env_data["description"] = env_config.description
+        data["environments"][env_name] = env_data
 
     # Write to file
-    with open(config.config_path, 'w') as f:
+    with open(config.config_path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
 
@@ -302,7 +304,7 @@ def add_environment(
     key_file: Optional[str] = None,
     key_env: Optional[str] = None,
     description: Optional[str] = None,
-    config_path: Optional[Path] = None
+    config_path: Optional[Path] = None,
 ) -> None:
     """
     Add a new environment to workspace configuration.
@@ -343,7 +345,7 @@ def add_environment(
         name=env_name,
         key_file=key_file_relative,
         key_env=key_env,
-        description=description
+        description=description,
     )
 
     # Add to config
