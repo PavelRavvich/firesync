@@ -44,7 +44,7 @@ FireSync is a lightweight Python tool that brings version control and deployment
 ### Prerequisites
 
 - Python 3.8+
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (gcloud CLI)
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (gcloud CLI >= 550.0.0)
 - GCP service account with Firestore permissions:
   - `datastore.indexes.list`
   - `datastore.indexes.create`
