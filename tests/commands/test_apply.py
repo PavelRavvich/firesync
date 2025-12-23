@@ -1,14 +1,9 @@
-"""Unit tests for firestore_apply module."""
+"""Unit tests for firesync.commands.apply module."""
 
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add parent directory to path to import firestore_apply
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import firestore_apply
+from firesync.commands.apply import apply_resources
 
 
 class TestApplyResources(unittest.TestCase):
@@ -29,7 +24,7 @@ class TestApplyResources(unittest.TestCase):
         self.mock_build_command.return_value = ["gcloud", "command"]
         self.mock_client.run_command_tolerant.return_value = True
 
-        count = firestore_apply.apply_resources(
+        count = apply_resources(
             self.mock_client,
             resources,
             self.mock_build_command,
@@ -51,7 +46,7 @@ class TestApplyResources(unittest.TestCase):
         # First succeeds, second fails, third succeeds
         self.mock_client.run_command_tolerant.side_effect = [True, False, True]
 
-        count = firestore_apply.apply_resources(
+        count = apply_resources(
             self.mock_client,
             resources,
             self.mock_build_command,
@@ -78,7 +73,7 @@ class TestApplyResources(unittest.TestCase):
         self.mock_client.run_command_tolerant.return_value = True
 
         with patch('builtins.print'):  # Suppress print output
-            count = firestore_apply.apply_resources(
+            count = apply_resources(
                 self.mock_client,
                 resources,
                 self.mock_build_command,
@@ -91,7 +86,7 @@ class TestApplyResources(unittest.TestCase):
 
     def test_apply_resources_empty_list(self):
         """Test applying empty resource list."""
-        count = firestore_apply.apply_resources(
+        count = apply_resources(
             self.mock_client,
             [],
             self.mock_build_command,

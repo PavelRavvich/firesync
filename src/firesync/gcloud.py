@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from core.config import FiresyncConfig
+from firesync.config import FiresyncConfig
 
 logger = logging.getLogger(__name__)
 

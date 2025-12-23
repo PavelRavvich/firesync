@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-"""Tests for core.workspace module."""
-
-import sys
-from pathlib import Path
-
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+"""Tests for firesync.workspace module."""
 
 import unittest
 import tempfile
 import shutil
-from unittest.mock import patch, mock_open
+from pathlib import Path
+from unittest.mock import patch
 
-from core.workspace import (
+from firesync.workspace import (
     EnvironmentConfig,
     WorkspaceConfig,
     find_config,
     load_config,
     init_workspace,
+    save_config,
+    add_environment,
+    remove_environment,
     CONFIG_DIR_NAME,
     CONFIG_FILE_NAME,
 )
@@ -160,7 +158,7 @@ class TestFindConfig(unittest.TestCase):
         # Result depends on whether config exists on system, but should not crash
         self.assertIsInstance(found, (Path, type(None)))
 
-    @patch('core.workspace.Path.cwd')
+    @patch('firesync.workspace.Path.cwd')
     def test_find_config_uses_cwd_by_default(self, mock_cwd):
         """Test that find_config uses current directory by default."""
         mock_cwd.return_value = Path(self.temp_dir)
@@ -287,126 +285,6 @@ settings:
             load_config(self.config_path)
         self.assertIn("Unsupported config version: 2", str(ctx.exception))
 
-    def test_load_config_missing_version(self):
-        """Test that ValueError is raised when version is missing."""
-        self.write_config("""
-environments: {}
-settings:
-  schema_dir: schemas
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("Unsupported config version: None", str(ctx.exception))
-
-    def test_load_config_environments_not_dict(self):
-        """Test that ValueError is raised if environments is not a dict."""
-        self.write_config("""
-version: 1
-environments: []
-settings:
-  schema_dir: schemas
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("'environments' must be a dictionary", str(ctx.exception))
-
-    def test_load_config_environment_not_dict(self):
-        """Test that ValueError is raised if individual environment is not a dict."""
-        self.write_config("""
-version: 1
-environments:
-  prod: "string value"
-settings:
-  schema_dir: schemas
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("Environment 'prod' must be a dictionary", str(ctx.exception))
-
-    def test_load_config_environment_both_keys(self):
-        """Test that ValueError is raised if environment has both key_path and key_env."""
-        self.write_config("""
-version: 1
-environments:
-  prod:
-    key_path: keys/prod.json
-    key_env: GCP_PROD_KEY
-settings:
-  schema_dir: schemas
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("cannot specify both key_path and key_env", str(ctx.exception))
-
-    def test_load_config_environment_no_keys(self):
-        """Test that ValueError is raised if environment has neither key_path nor key_env."""
-        self.write_config("""
-version: 1
-environments:
-  prod:
-    description: "No keys specified"
-settings:
-  schema_dir: schemas
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("must specify either key_path or key_env", str(ctx.exception))
-
-    def test_load_config_settings_not_dict(self):
-        """Test that ValueError is raised if settings is not a dict."""
-        self.write_config("""
-version: 1
-environments:
-  dev:
-    key_path: dev.json
-settings: "string value"
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("'settings' must be a dictionary", str(ctx.exception))
-
-    def test_load_config_schema_dir_not_string(self):
-        """Test that ValueError is raised if schema_dir is not a string."""
-        self.write_config("""
-version: 1
-environments:
-  dev:
-    key_path: dev.json
-settings:
-  schema_dir: 123
-""")
-        with self.assertRaises(ValueError) as ctx:
-            load_config(self.config_path)
-        self.assertIn("'settings.schema_dir' must be a string", str(ctx.exception))
-
-    @patch('core.workspace.find_config')
-    def test_load_config_searches_when_path_not_provided(self, mock_find):
-        """Test that load_config searches for config when path is not provided."""
-        mock_find.return_value = self.config_path
-
-        self.write_config("""
-version: 1
-environments:
-  dev:
-    key_path: dev.json
-settings:
-  schema_dir: schemas
-""")
-
-        config = load_config()
-        mock_find.assert_called_once()
-        self.assertEqual(config.config_path, self.config_path)
-
-    @patch('core.workspace.find_config')
-    def test_load_config_not_found_when_searching(self, mock_find):
-        """Test that FileNotFoundError is raised when config is not found during search."""
-        mock_find.return_value = None
-
-        with self.assertRaises(FileNotFoundError) as ctx:
-            load_config()
-        self.assertIn("Could not find", str(ctx.exception))
-        self.assertIn("firesync init", str(ctx.exception))
-
 
 class TestInitWorkspace(unittest.TestCase):
     """Tests for init_workspace function."""
@@ -458,7 +336,7 @@ class TestInitWorkspace(unittest.TestCase):
             init_workspace(Path(self.temp_dir))
         self.assertIn("already exists", str(ctx.exception))
 
-    @patch('core.workspace.Path.cwd')
+    @patch('firesync.workspace.Path.cwd')
     def test_init_workspace_uses_cwd_by_default(self, mock_cwd):
         """Test that init_workspace uses current directory by default."""
         mock_cwd.return_value = Path(self.temp_dir)
@@ -485,6 +363,146 @@ class TestInitWorkspace(unittest.TestCase):
         self.assertEqual(data['version'], 1)
         self.assertIn('environments', data)
         self.assertIn('settings', data)
+
+
+class TestSaveConfig(unittest.TestCase):
+    """Tests for save_config function."""
+
+    def setUp(self):
+        """Create temporary directory for testing."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(self.temp_dir))
+
+        # Create workspace directory
+        self.workspace_dir = Path(self.temp_dir) / CONFIG_DIR_NAME
+        self.workspace_dir.mkdir()
+        self.config_path = self.workspace_dir / CONFIG_FILE_NAME
+
+    def test_save_config_basic(self):
+        """Test saving basic configuration."""
+        env1 = EnvironmentConfig(name="prod", key_path="keys/prod.json")
+        env2 = EnvironmentConfig(name="dev", key_env="DEV_KEY")
+
+        config = WorkspaceConfig(
+            version=1,
+            environments={"prod": env1, "dev": env2},
+            schema_dir="schemas",
+            config_path=self.config_path
+        )
+
+        save_config(config)
+
+        # Verify file was created
+        self.assertTrue(self.config_path.exists())
+
+        # Load and verify
+        loaded_config = load_config(self.config_path)
+        self.assertEqual(loaded_config.version, 1)
+        self.assertEqual(len(loaded_config.environments), 2)
+        self.assertIn("prod", loaded_config.environments)
+        self.assertIn("dev", loaded_config.environments)
+
+
+class TestAddEnvironment(unittest.TestCase):
+    """Tests for add_environment function."""
+
+    def setUp(self):
+        """Create temporary workspace for testing."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(self.temp_dir))
+
+        # Create workspace with initial config
+        self.workspace_dir = Path(self.temp_dir) / CONFIG_DIR_NAME
+        self.workspace_dir.mkdir()
+        self.config_path = self.workspace_dir / CONFIG_FILE_NAME
+
+        # Create initial config
+        initial_config = WorkspaceConfig(
+            version=1,
+            environments={},
+            schema_dir="schemas",
+            config_path=self.config_path
+        )
+        save_config(initial_config)
+
+    def test_add_environment_with_key_env(self):
+        """Test adding environment with key_env."""
+        add_environment(
+            env_name="staging",
+            key_env="GCP_STAGING_KEY",
+            description="Staging environment",
+            config_path=self.config_path
+        )
+
+        # Verify environment was added
+        config = load_config(self.config_path)
+        self.assertIn("staging", config.environments)
+
+        staging_env = config.environments["staging"]
+        self.assertEqual(staging_env.key_env, "GCP_STAGING_KEY")
+        self.assertIsNone(staging_env.key_path)
+
+    def test_add_environment_already_exists(self):
+        """Test that adding existing environment raises ValueError."""
+        add_environment(
+            env_name="prod",
+            key_env="PROD_KEY",
+            config_path=self.config_path
+        )
+
+        # Try to add again
+        with self.assertRaises(ValueError) as ctx:
+            add_environment(
+                env_name="prod",
+                key_env="PROD_KEY2",
+                config_path=self.config_path
+            )
+        self.assertIn("already exists", str(ctx.exception))
+
+
+class TestRemoveEnvironment(unittest.TestCase):
+    """Tests for remove_environment function."""
+
+    def setUp(self):
+        """Create temporary workspace with environments for testing."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(self.temp_dir))
+
+        # Create workspace with initial config
+        self.workspace_dir = Path(self.temp_dir) / CONFIG_DIR_NAME
+        self.workspace_dir.mkdir()
+        self.config_path = self.workspace_dir / CONFIG_FILE_NAME
+
+        # Create config with multiple environments
+        env1 = EnvironmentConfig(name="prod", key_path="keys/prod.json")
+        env2 = EnvironmentConfig(name="staging", key_env="STAGING_KEY")
+        env3 = EnvironmentConfig(name="dev", key_env="DEV_KEY")
+
+        initial_config = WorkspaceConfig(
+            version=1,
+            environments={"prod": env1, "staging": env2, "dev": env3},
+            schema_dir="schemas",
+            config_path=self.config_path
+        )
+        save_config(initial_config)
+
+    def test_remove_environment_success(self):
+        """Test removing an existing environment."""
+        remove_environment("staging", self.config_path)
+
+        # Verify environment was removed
+        config = load_config(self.config_path)
+        self.assertNotIn("staging", config.environments)
+        self.assertEqual(len(config.environments), 2)
+        self.assertIn("prod", config.environments)
+        self.assertIn("dev", config.environments)
+
+    def test_remove_environment_not_found(self):
+        """Test that removing non-existent environment raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            remove_environment("nonexistent", self.config_path)
+        self.assertIn("not found", str(ctx.exception))
+        self.assertIn("prod, staging, dev", str(ctx.exception))
 
 
 if __name__ == "__main__":

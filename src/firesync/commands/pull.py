@@ -4,9 +4,9 @@
 import logging
 import sys
 
-from core.cli import parse_pull_args, setup_client
-from core.schema import SchemaFile, ensure_schema_dir
-from core.workspace import load_config
+from firesync.cli import parse_pull_args, setup_client
+from firesync.schema import SchemaFile, ensure_schema_dir
+from firesync.workspace import load_config
 
 # Configure logging
 logging.basicConfig(
@@ -43,7 +43,7 @@ def pull_single_environment(env_name):
 
 
 def main():
-    """Main entry point for firestore_pull command."""
+    """Main entry point for firesync pull command."""
     args = parse_pull_args("Export Firestore schema from GCP to local JSON files")
 
     # Handle --all mode
@@ -60,7 +60,7 @@ def main():
             sys.exit(1)
 
         env_count = len(workspace_config.environments)
-        print(f"\n📦 Pulling schemas from {env_count} environment(s)...\n")
+        print(f"\nPulling schemas from {env_count} environment(s)...\n")
 
         success_count = 0
         failed_envs = []

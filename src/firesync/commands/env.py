@@ -4,14 +4,8 @@
 import sys
 import logging
 import argparse
-from pathlib import Path
 
-# Add project root to path if running as standalone script
-if __name__ == "__main__":
-    project_root = Path(__file__).parent
-    sys.path.insert(0, str(project_root))
-
-from core.workspace import (
+from firesync.workspace import (
     load_config,
     add_environment,
     remove_environment,
@@ -38,7 +32,7 @@ def cmd_list(args):
         print(f"\nEnvironments in {config.config_path}:\n")
         for env_name, env_config in config.environments.items():
             desc = f" - {env_config.description}" if env_config.description else ""
-            print(f"  • {env_name}")
+            print(f"  * {env_name}")
 
             if env_config.key_path:
                 # Show relative path and absolute path in parentheses
@@ -186,7 +180,7 @@ def cmd_remove(args):
 
 
 def main():
-    """Main entry point for firestore_env command."""
+    """Main entry point for firesync env command."""
     parser = argparse.ArgumentParser(
         description='Manage FireSync workspace environments'
     )

@@ -3,9 +3,9 @@
 import argparse
 from typing import Optional, Tuple
 
-from core.config import FiresyncConfig
-from core.gcloud import GCloudClient
-from core.workspace import load_config
+from firesync.config import FiresyncConfig
+from firesync.gcloud import GCloudClient
+from firesync.workspace import load_config
 
 
 def _validate_migration_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:

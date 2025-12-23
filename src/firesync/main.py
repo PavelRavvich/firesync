@@ -3,8 +3,8 @@
 
 import argparse
 import sys
-import subprocess
-from pathlib import Path
+
+from firesync import __version__
 
 
 def create_parser():
@@ -17,16 +17,16 @@ def create_parser():
     parser.add_argument(
         '--version',
         action='version',
-        version='firesync 0.1.0'
+        version=f'firesync {__version__}'
     )
 
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Init command
-    init_parser = subparsers.add_parser('init', help='Initialize FireSync workspace')
+    subparsers.add_parser('init', help='Initialize FireSync workspace')
 
     # Env command (with sub-subcommands)
-    env_parser = subparsers.add_parser('env', help='Manage workspace environments')
+    subparsers.add_parser('env', help='Manage workspace environments')
 
     # Pull command
     pull_parser = subparsers.add_parser('pull', help='Export Firestore schema to local files')
@@ -55,10 +55,11 @@ def main():
     """Main CLI entry point."""
     # Special handling for 'env' command - pass through directly
     if len(sys.argv) > 1 and sys.argv[1] == 'env':
-        script_dir = Path(__file__).parent.parent
-        cmd = ['python3', str(script_dir / 'firestore_env.py')] + sys.argv[2:]
-        result = subprocess.run(cmd)
-        sys.exit(result.returncode)
+        # Remove 'env' from argv and call env command directly
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        from firesync.commands.env import main as env_main
+        env_main()
+        return
 
     parser = create_parser()
     args = parser.parse_args()
@@ -67,44 +68,46 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    # Find the project root (where firestore_*.py scripts are)
-    # src/firesync_cli.py -> src/ -> root
-    script_dir = Path(__file__).parent.parent
-
-    # Build command
-    cmd = ['python3']
-
     if args.command == 'init':
-        cmd.append(str(script_dir / 'firestore_init.py'))
+        from firesync.commands.init import main as init_main
+        init_main()
 
     elif args.command == 'pull':
-        cmd.append(str(script_dir / 'firestore_pull.py'))
+        # Reconstruct args for pull command
+        pull_args = [sys.argv[0]]
         if hasattr(args, 'all') and args.all:
-            cmd.append('--all')
+            pull_args.append('--all')
         elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
+            pull_args.extend(['--env', args.env])
+        sys.argv = pull_args
+        from firesync.commands.pull import main as pull_main
+        pull_main()
 
     elif args.command == 'plan':
-        cmd.append(str(script_dir / 'firestore_plan.py'))
+        # Reconstruct args for plan command
+        plan_args = [sys.argv[0]]
         if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
-            cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
+            plan_args.extend(['--env-from', args.env_from, '--env-to', args.env_to])
         elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
+            plan_args.extend(['--env', args.env])
         if hasattr(args, 'schema_dir') and args.schema_dir:
-            cmd.extend(['--schema-dir', args.schema_dir])
+            plan_args.extend(['--schema-dir', args.schema_dir])
+        sys.argv = plan_args
+        from firesync.commands.plan import main as plan_main
+        plan_main()
 
     elif args.command == 'apply':
-        cmd.append(str(script_dir / 'firestore_apply.py'))
+        # Reconstruct args for apply command
+        apply_args = [sys.argv[0]]
         if hasattr(args, 'env_from') and args.env_from and hasattr(args, 'env_to') and args.env_to:
-            cmd.extend(['--env-from', args.env_from, '--env-to', args.env_to])
+            apply_args.extend(['--env-from', args.env_from, '--env-to', args.env_to])
         elif hasattr(args, 'env') and args.env:
-            cmd.extend(['--env', args.env])
+            apply_args.extend(['--env', args.env])
         if hasattr(args, 'schema_dir') and args.schema_dir:
-            cmd.extend(['--schema-dir', args.schema_dir])
-
-    # Execute the command
-    result = subprocess.run(cmd)
-    sys.exit(result.returncode)
+            apply_args.extend(['--schema-dir', args.schema_dir])
+        sys.argv = apply_args
+        from firesync.commands.apply import main as apply_main
+        apply_main()
 
 
 if __name__ == '__main__':

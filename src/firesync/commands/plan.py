@@ -6,15 +6,14 @@ import sys
 from typing import Callable, List, Any, Dict
 from pathlib import Path
 
-from core.cli import parse_plan_args, setup_client
-from core.gcloud import GCloudClient
-from core.operations import (
+from firesync.cli import parse_plan_args, setup_client
+from firesync.operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
     TTLPolicyOperations,
 )
-from core.schema import SchemaFile, load_schema_file
-from core.workspace import load_config
+from firesync.schema import SchemaFile, load_schema_file
+from firesync.workspace import load_config
 
 # Configure logging
 logging.basicConfig(
@@ -105,7 +104,7 @@ def compare_local_schemas(
 
 
 def main():
-    """Main entry point for firestore_plan command."""
+    """Main entry point for firesync plan command."""
     args = parse_plan_args("Compare local Firestore schema against remote state")
 
     # Check if migration mode (--env-from and --env-to)
@@ -159,7 +158,7 @@ def main():
             format_ttl
         )
 
-        print("\n✔️ Migration plan complete.")
+        print("\n[+] Migration plan complete.")
 
     else:
         # Standard mode: compare local vs remote
@@ -202,7 +201,7 @@ def main():
             format_ttl
         )
 
-        print("\n✔️ Plan complete.")
+        print("\n[+] Plan complete.")
 
 
 if __name__ == "__main__":

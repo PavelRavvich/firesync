@@ -3,14 +3,8 @@
 
 import sys
 import logging
-from pathlib import Path
 
-# Add project root to path if running as standalone script
-if __name__ == "__main__":
-    project_root = Path(__file__).parent
-    sys.path.insert(0, str(project_root))
-
-from core.workspace import init_workspace, CONFIG_DIR_NAME
+from firesync.workspace import init_workspace, CONFIG_DIR_NAME
 
 # Configure logging
 logging.basicConfig(
@@ -21,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for firestore_init command."""
+    """Main entry point for firesync init command."""
     try:
         config_path = init_workspace()
         print(f"\n[+] FireSync workspace initialized at: {config_path.parent}")
