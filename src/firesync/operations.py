@@ -4,20 +4,12 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple
 
-from .normalizers import (
-    normalize_collection_name,
-    normalize_field_path,
-    normalize_fields,
-    normalize_index_value,
-    normalize_query_scope,
-    normalize_ttl_period,
-    normalize_ttl_state,
-)
-from .schema import (
-    validate_composite_index,
-    validate_field_index,
-    validate_ttl_policy,
-)
+from .normalizers import (normalize_collection_name, normalize_field_path,
+                          normalize_fields, normalize_index_value,
+                          normalize_query_scope, normalize_ttl_period,
+                          normalize_ttl_state)
+from .schema import (validate_composite_index, validate_field_index,
+                     validate_ttl_policy)
 
 logger = logging.getLogger(__name__)
 

@@ -2,16 +2,11 @@
 
 import unittest
 
-from firesync.normalizers import (
-    normalize_collection_name,
-    normalize_field_config,
-    normalize_field_path,
-    normalize_fields,
-    normalize_index_value,
-    normalize_query_scope,
-    normalize_ttl_period,
-    normalize_ttl_state,
-)
+from firesync.normalizers import (normalize_collection_name,
+                                  normalize_field_config, normalize_field_path,
+                                  normalize_fields, normalize_index_value,
+                                  normalize_query_scope, normalize_ttl_period,
+                                  normalize_ttl_state)
 
 
 class TestNormalizeCollectionName(unittest.TestCase):

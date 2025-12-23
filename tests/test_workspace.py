@@ -8,15 +8,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from firesync.workspace import (
-    CONFIG_DIR_NAME,
-    CONFIG_FILE_NAME,
-    EnvironmentConfig,
-    WorkspaceConfig,
-    find_config,
-    init_workspace,
-    load_config,
-)
+from firesync.workspace import (CONFIG_DIR_NAME, CONFIG_FILE_NAME,
+                                EnvironmentConfig, WorkspaceConfig,
+                                find_config, init_workspace, load_config)
 
 
 class TestEnvironmentConfig(unittest.TestCase):

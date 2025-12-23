@@ -2,11 +2,8 @@
 
 import unittest
 
-from firesync.operations import (
-    CompositeIndexOperations,
-    FieldIndexOperations,
-    TTLPolicyOperations,
-)
+from firesync.operations import (CompositeIndexOperations,
+                                 FieldIndexOperations, TTLPolicyOperations)
 
 
 class TestCompositeIndexOperations(unittest.TestCase):

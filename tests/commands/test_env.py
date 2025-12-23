@@ -8,16 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from firesync.workspace import (
-    CONFIG_DIR_NAME,
-    CONFIG_FILE_NAME,
-    EnvironmentConfig,
-    WorkspaceConfig,
-    add_environment,
-    load_config,
-    remove_environment,
-    save_config,
-)
+from firesync.workspace import (CONFIG_DIR_NAME, CONFIG_FILE_NAME,
+                                EnvironmentConfig, WorkspaceConfig,
+                                add_environment, load_config,
+                                remove_environment, save_config)
 
 
 class TestSaveConfig(unittest.TestCase):

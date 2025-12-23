@@ -5,15 +5,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from firesync.schema import (
-    SchemaFile,
-    ensure_schema_dir,
-    load_schema_file,
-    save_schema_file,
-    validate_composite_index,
-    validate_field_index,
-    validate_ttl_policy,
-)
+from firesync.schema import (SchemaFile, ensure_schema_dir, load_schema_file,
+                             save_schema_file, validate_composite_index,
+                             validate_field_index, validate_ttl_policy)
 
 
 class TestSchemaFile(unittest.TestCase):

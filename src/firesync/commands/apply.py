@@ -8,11 +8,8 @@ from typing import Any, Callable, Dict, List
 from ..cli import parse_apply_args, setup_client
 from ..gcloud import GCloudClient
 from ..logger import setup_logging
-from ..operations import (
-    CompositeIndexOperations,
-    FieldIndexOperations,
-    TTLPolicyOperations,
-)
+from ..operations import (CompositeIndexOperations, FieldIndexOperations,
+                          TTLPolicyOperations)
 from ..schema import SchemaFile, load_schema_file
 from ..ui import calculate_changes, confirm_apply
 from ..workspace import load_config

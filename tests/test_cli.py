@@ -5,12 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from firesync.cli import (
-    parse_apply_args,
-    parse_plan_args,
-    parse_pull_args,
-    setup_client,
-)
+from firesync.cli import (parse_apply_args, parse_plan_args, parse_pull_args,
+                          setup_client)
 from firesync.config import FiresyncConfig
 from firesync.workspace import EnvironmentConfig, WorkspaceConfig
 

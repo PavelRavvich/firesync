@@ -6,11 +6,7 @@ import sys
 from pathlib import Path
 
 from ..logger import setup_logging
-from ..workspace import (
-    add_environment,
-    load_config,
-    remove_environment,
-)
+from ..workspace import add_environment, load_config, remove_environment
 
 # Configure logging based on environment variables
 logger = setup_logging()
