@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, cli ]
+    branches: [ main, cli, jovial-yalow ]
   pull_request:
-    branches: [ main, cli ]
+    branches: [ main, cli, jovial-yalow ]
 
 jobs:
   test:
