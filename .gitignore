@@ -29,9 +29,8 @@ Thumbs.db
 secrets/*
 !secrets/.gitkeep
 
-# Firestore schema (optional - uncomment if you want to version control schema)
-# firestore_schema/*
-# !firestore_schema/.gitkeep
+# Firestore schema - working directory (not versioned)
+firestore_schema/
 
 # Testing and coverage
 .coverage

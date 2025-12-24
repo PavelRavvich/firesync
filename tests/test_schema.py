@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.schema import (
+from firesync.schema import (
     SchemaFile,
     ensure_schema_dir,
     load_schema_file,

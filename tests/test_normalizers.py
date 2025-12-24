@@ -2,7 +2,7 @@
 
 import unittest
 
-from core.normalizers import (
+from firesync.normalizers import (
     normalize_collection_name,
     normalize_field_config,
     normalize_field_path,

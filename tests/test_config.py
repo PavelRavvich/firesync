@@ -1,135 +1,119 @@
-"""Unit tests for firesync.config module."""
+#!/usr/bin/env python3
+"""Tests for firesync.config module."""
 
 import json
-import sys
+import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Environment, FiresyncConfig
+from firesync.config import FiresyncConfig
 
 
-class TestEnvironment(unittest.TestCase):
-    """Tests for Environment enum."""
-
-    def test_from_string_valid(self):
-        """Test converting valid strings to Environment."""
-        self.assertEqual(Environment.from_string("dev"), Environment.DEV)
-        self.assertEqual(Environment.from_string("staging"), Environment.STAGING)
-        self.assertEqual(Environment.from_string("production"), Environment.PRODUCTION)
-        self.assertEqual(Environment.from_string("DEV"), Environment.DEV)
-
-    def test_from_string_invalid(self):
-        """Test error on invalid environment string."""
-        with self.assertRaises(ValueError) as ctx:
-            Environment.from_string("invalid")
-        self.assertIn("Invalid environment", str(ctx.exception))
-
-
-class TestFiresyncConfig(unittest.TestCase):
-    """Tests for FiresyncConfig class."""
+class TestLoadKeyAutoDetect(unittest.TestCase):
+    """Tests for _load_key auto-detection of JSON content vs file path."""
 
     def setUp(self):
         """Set up test fixtures."""
         self.test_key_data = {
-            "project_id": "test-project-123",
-            "client_email": "test@test-project-123.iam.gserviceaccount.com"
+            "type": "service_account",
+            "project_id": "test-project",
+            "client_email": "test@test-project.iam.gserviceaccount.com"
         }
+        self.test_key_json = json.dumps(self.test_key_data)
 
-    def test_from_args_missing_env(self):
-        """Test error when environment is not provided."""
-        with patch.dict("os.environ", {}, clear=True):
+    def test_key_env_with_json_content(self):
+        """Test that key_env with JSON content creates temp file."""
+        with patch.dict(os.environ, {'GCP_KEY': self.test_key_json}):
+            key_data, key_path, temp_file = FiresyncConfig._load_key(
+                key_path=None,
+                key_env='GCP_KEY'
+            )
+
+            self.assertEqual(key_data['project_id'], 'test-project')
+            self.assertIsNotNone(temp_file)  # Temp file created for JSON content
+            self.assertTrue(key_path.exists())
+
+            # Clean up temp file
+            if temp_file:
+                os.unlink(temp_file)
+
+    def test_key_env_with_file_path(self):
+        """Test that key_env with file path reads from that file."""
+        # Create temp key file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(self.test_key_data, f)
+            temp_key_path = f.name
+
+        try:
+            with patch.dict(os.environ, {'GCP_KEY': temp_key_path}):
+                key_data, key_path, temp_file = FiresyncConfig._load_key(
+                    key_path=None,
+                    key_env='GCP_KEY'
+                )
+
+                self.assertEqual(key_data['project_id'], 'test-project')
+                self.assertIsNone(temp_file)  # No temp file for file path
+                self.assertEqual(str(key_path), str(Path(temp_key_path).resolve()))
+        finally:
+            os.unlink(temp_key_path)
+
+    def test_key_env_not_set(self):
+        """Test that missing env var causes exit."""
+        with patch.dict(os.environ, {}, clear=True):
+            # Remove the key if it exists
+            os.environ.pop('NONEXISTENT_KEY', None)
+
             with self.assertRaises(SystemExit):
-                FiresyncConfig.from_args(env=None)
+                FiresyncConfig._load_key(
+                    key_path=None,
+                    key_env='NONEXISTENT_KEY'
+                )
 
-    def test_from_args_invalid_env(self):
-        """Test error when environment is invalid."""
+    def test_key_env_invalid_path(self):
+        """Test that invalid file path in env var causes exit."""
+        with patch.dict(os.environ, {'GCP_KEY': '/nonexistent/path/to/key.json'}):
+            with self.assertRaises(SystemExit):
+                FiresyncConfig._load_key(
+                    key_path=None,
+                    key_env='GCP_KEY'
+                )
+
+    def test_key_path_direct(self):
+        """Test direct key_path works as before."""
+        # Create temp key file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(self.test_key_data, f)
+            temp_key_path = f.name
+
+        try:
+            key_data, key_path, temp_file = FiresyncConfig._load_key(
+                key_path=temp_key_path,
+                key_env=None
+            )
+
+            self.assertEqual(key_data['project_id'], 'test-project')
+            self.assertIsNone(temp_file)
+        finally:
+            os.unlink(temp_key_path)
+
+    def test_both_key_path_and_key_env_fails(self):
+        """Test that specifying both key_path and key_env causes exit."""
         with self.assertRaises(SystemExit):
-            FiresyncConfig.from_args(env="invalid")
+            FiresyncConfig._load_key(
+                key_path='/some/path',
+                key_env='SOME_KEY'
+            )
 
-    @patch("pathlib.Path.exists")
-    def test_from_args_missing_key_file(self, mock_exists):
-        """Test error when key file doesn't exist."""
-        mock_exists.return_value = False
+    def test_neither_key_path_nor_key_env_fails(self):
+        """Test that specifying neither key_path nor key_env causes exit."""
         with self.assertRaises(SystemExit):
-            FiresyncConfig.from_args(env="dev")
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    def test_from_args_invalid_json(self, mock_exists, mock_read_text):
-        """Test error when key file has invalid JSON."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = "invalid json"
-        with self.assertRaises(SystemExit):
-            FiresyncConfig.from_args(env="dev")
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    def test_from_args_missing_fields(self, mock_exists, mock_read_text):
-        """Test error when key file is missing required fields."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = json.dumps({"project_id": "test"})
-        with self.assertRaises(SystemExit):
-            FiresyncConfig.from_args(env="dev")
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    def test_from_args_success(self, mock_exists, mock_read_text):
-        """Test successful config creation."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = json.dumps(self.test_key_data)
-
-        config = FiresyncConfig.from_args(env="dev")
-
-        self.assertEqual(config.env, Environment.DEV)
-        self.assertEqual(config.project_id, "test-project-123")
-        self.assertEqual(config.service_account, "test@test-project-123.iam.gserviceaccount.com")
-        # Use Path for cross-platform compatibility
-        self.assertTrue(config.key_path.match("*/secrets/gcp-key-dev.json"))
-        self.assertTrue(config.schema_dir.match("*/firestore_schema"))
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    def test_from_args_custom_schema_dir(self, mock_exists, mock_read_text):
-        """Test config with custom schema directory."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = json.dumps(self.test_key_data)
-
-        config = FiresyncConfig.from_args(env="staging", schema_dir="custom_schema")
-
-        self.assertEqual(config.env, Environment.STAGING)
-        # Use Path for cross-platform compatibility
-        self.assertTrue(config.schema_dir.match("*/custom_schema"))
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    @patch.dict("os.environ", {"ENV": "production"})
-    def test_from_args_env_variable(self, mock_exists, mock_read_text):
-        """Test config using ENV environment variable."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = json.dumps(self.test_key_data)
-
-        config = FiresyncConfig.from_args(env=None)
-
-        self.assertEqual(config.env, Environment.PRODUCTION)
-
-    @patch("pathlib.Path.read_text")
-    @patch("pathlib.Path.exists")
-    @patch("builtins.print")
-    def test_display_info(self, mock_print, mock_exists, mock_read_text):
-        """Test display_info prints configuration."""
-        mock_exists.return_value = True
-        mock_read_text.return_value = json.dumps(self.test_key_data)
-
-        config = FiresyncConfig.from_args(env="dev")
-        config.display_info()
-
-        # Check that print was called with expected information
-        self.assertTrue(mock_print.called)
-        calls_str = " ".join(str(call) for call in mock_print.call_args_list)
-        self.assertIn("dev", calls_str)
-        self.assertIn("test-project-123", calls_str)
+            FiresyncConfig._load_key(
+                key_path=None,
+                key_env=None
+            )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

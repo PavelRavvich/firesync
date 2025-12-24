@@ -2,16 +2,18 @@
 """Apply local Firestore schema to remote GCP project."""
 
 import logging
+import sys
 from typing import Callable, List, Dict, Any
 
-from core.cli import parse_common_args, setup_client
-from core.gcloud import GCloudClient
-from core.operations import (
+from firesync.cli import parse_apply_args, setup_client
+from firesync.gcloud import GCloudClient
+from firesync.operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
     TTLPolicyOperations,
 )
-from core.schema import SchemaFile, load_schema_file
+from firesync.schema import SchemaFile, load_schema_file
+from firesync.workspace import load_config
 
 # Configure logging
 logging.basicConfig(
@@ -51,18 +53,18 @@ def apply_resources(
     return success_count
 
 
-def main():
-    """Main entry point for firestore_apply command."""
-    args = parse_common_args(
-        "Apply local Firestore schema to remote GCP project",
-        include_schema_dir=True
-    )
-    config, client = setup_client(env=args.env, schema_dir=args.schema_dir)
+def apply_schema_from_directory(client: GCloudClient, schema_dir):
+    """
+    Apply all schemas from a directory to Firestore.
 
+    Args:
+        client: GCloud client configured for target environment
+        schema_dir: Path to schema directory
+    """
     # Apply Composite Indexes
-    print("\n🔹 Applying Composite Indexes")
+    print("\n[~] Applying Composite Indexes")
     try:
-        local_composite = load_schema_file(config.schema_dir / SchemaFile.COMPOSITE_INDEXES)
+        local_composite = load_schema_file(schema_dir / SchemaFile.COMPOSITE_INDEXES)
 
         if not isinstance(local_composite, list):
             raise ValueError("Expected a list in composite-indexes.json")
@@ -82,9 +84,9 @@ def main():
         logger.exception("Failed to apply composite indexes")
 
     # Apply Single-Field Indexes
-    print("\n🔹 Applying Single-Field Indexes")
+    print("\n[~] Applying Single-Field Indexes")
     try:
-        local_fields = load_schema_file(config.schema_dir / SchemaFile.FIELD_INDEXES)
+        local_fields = load_schema_file(schema_dir / SchemaFile.FIELD_INDEXES)
 
         if not isinstance(local_fields, list):
             raise ValueError("Expected a list in field-indexes.json")
@@ -126,9 +128,9 @@ def main():
         logger.exception("Failed to apply field indexes")
 
     # Apply TTL Policies
-    print("\n🔹 Applying TTL Policies")
+    print("\n[~] Applying TTL Policies")
     try:
-        local_ttl = load_schema_file(config.schema_dir / SchemaFile.TTL_POLICIES)
+        local_ttl = load_schema_file(schema_dir / SchemaFile.TTL_POLICIES)
 
         if not isinstance(local_ttl, list):
             raise ValueError("Expected a list in ttl-policies.json")
@@ -147,7 +149,44 @@ def main():
         print(f"[!] Error applying TTL: {e}")
         logger.exception("Failed to apply TTL policies")
 
-    print("\n✔️ Firestore schema applied.")
+
+def main():
+    """Main entry point for firesync apply command."""
+    args = parse_apply_args("Apply local Firestore schema to remote GCP project")
+
+    # Check if migration mode (--env-from and --env-to)
+    if args.env_from and args.env_to:
+        # Migration mode: apply source schema to target environment
+        try:
+            workspace_config = load_config()
+        except FileNotFoundError as e:
+            print(f"[!] {e}")
+            sys.exit(1)
+
+        # Get source schema directory
+        source_schema_dir = workspace_config.get_schema_dir(args.env_from)
+
+        print(f"\nMigration: {args.env_from} -> {args.env_to}")
+        print(f"   Source schema: {source_schema_dir}")
+
+        # Set up client for target environment
+        _, target_client = setup_client(env=args.env_to)
+
+        # Apply source schema to target environment
+        apply_schema_from_directory(target_client, source_schema_dir)
+
+        print(f"\n[+] Migration applied: {args.env_from} schema -> {args.env_to} Firestore")
+
+    else:
+        # Standard mode: apply local schema to remote
+        config, client = setup_client(
+            env=args.env,
+            schema_dir=getattr(args, 'schema_dir', None)
+        )
+
+        apply_schema_from_directory(client, config.schema_dir)
+
+        print("\n[+] Firestore schema applied.")
 
 
 if __name__ == "__main__":

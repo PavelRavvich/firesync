@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "firestore-schema-migration"
+version = "0.1.0"
+description = "Infrastructure as Code for Google Cloud Firestore"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Pavel Ravvich"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "PyYAML>=5.1",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/PavelRavvich/firesync"
+Repository = "https://github.com/PavelRavvich/firesync"
+
+[project.scripts]
+firesync = "firesync.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
