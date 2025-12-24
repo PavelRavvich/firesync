@@ -246,11 +246,12 @@ def init_workspace(target_dir: Optional[Path] = None) -> Path:
     # Create config.yaml with template
     config_template = """version: 1
 environments:
+  # Example configurations:
   # production:
-  #   key_path: ../keys/prod.json
+  #   key_path: ../keys/prod.json        # Direct path to key file
   #   description: "Production environment"
   # staging:
-  #   key_env: GCP_STAGING_KEY
+  #   key_env: GCP_STAGING_KEY           # Env var (JSON content OR path to file)
   #   description: "Staging environment"
 settings:
   schema_dir: schemas
@@ -310,7 +311,7 @@ def add_environment(
     Args:
         env_name: Name of the environment
         key_path: Path to GCP service account key file (relative to cwd)
-        key_env: Environment variable name containing key JSON
+        key_env: Environment variable name (auto-detects JSON content or file path)
         description: Optional description of the environment
         config_path: Path to config.yaml (default: search from cwd)
 

@@ -70,6 +70,7 @@ def cmd_show(args):
         else:
             print(f"  Authentication: key_env")
             print(f"  Environment variable: {env_config.key_env}")
+            print(f"  (Auto-detects JSON content or file path)")
 
         if env_config.description:
             print(f"  Description:    {env_config.description}")
@@ -98,13 +99,7 @@ def cmd_show(args):
 def cmd_add(args):
     """Add a new environment."""
     try:
-        # Validate that exactly one of key_path or key_env is provided
-        if args.key_path and args.key_env:
-            print("[!] Cannot specify both --key-path and --key-env")
-            sys.exit(1)
-        if not args.key_path and not args.key_env:
-            print("[!] Must specify either --key-path or --key-env")
-            sys.exit(1)
+        # Validation is handled by argparse mutually exclusive group
 
         add_environment(
             env_name=args.name,
@@ -201,7 +196,7 @@ def main():
     add_parser.add_argument('name', help='Environment name')
     add_key_group = add_parser.add_mutually_exclusive_group(required=True)
     add_key_group.add_argument('--key-path', help='Path to GCP service account key file')
-    add_key_group.add_argument('--key-env', help='Environment variable with key JSON')
+    add_key_group.add_argument('--key-env', help='Environment variable (auto-detects JSON content or file path)')
     add_parser.add_argument('--description', help='Environment description')
     add_parser.set_defaults(func=cmd_add)
 

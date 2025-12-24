@@ -98,9 +98,11 @@ firesync init
 
 2. Add your environments:
 ```bash
-firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development environment"
-firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
-firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
+# Using direct path to key file
+firesync env add dev --key-path=./secrets/gcp-key-dev.json --description="Development"
+
+# Using environment variable (auto-detects JSON content or file path)
+firesync env add prod --key-env=GCP_PROD_KEY --description="Production"
 ```
 
 3. Pull schemas from all environments:
@@ -126,16 +128,38 @@ Creates:
 
 Manage environments in your workspace.
 
+**Authentication Options:**
+
+FireSync supports two ways to provide GCP service account credentials:
+
+| Option | Description | Use Case |
+|--------|-------------|----------|
+| `--key-path` | Direct path to key file | Local development |
+| `--key-env` | Environment variable name | CI/CD and shared environments |
+
+The `--key-env` option is smart: it auto-detects whether the environment variable contains:
+- **JSON content** (the key itself) - creates a temp file for gcloud
+- **File path** (path to key file) - reads the key from that path
+
 **Add environment:**
 ```bash
-# Using key file path
+# Option 1: Direct path to key file
 firesync env add dev --key-path=./secrets/gcp-key-dev.json
 
-# Using key file path with description
-firesync env add staging --key-path=./secrets/gcp-key-staging.json --description="Staging environment"
-
-# Using environment variable
+# Option 2: Environment variable (auto-detects JSON content or file path)
 firesync env add prod --key-env=GCP_PROD_KEY --description="Production environment"
+```
+
+**Example environment variable usage:**
+```bash
+# Store JSON content in env var (for CI/CD secrets)
+export GCP_KEY='{"type":"service_account","project_id":"my-project",...}'
+
+# Or store path to key file in env var
+export GCP_KEY='/path/to/service-account.json'
+
+# Both work with the same command:
+firesync env add prod --key-env=GCP_KEY
 ```
 
 **List environments:**
@@ -260,23 +284,20 @@ schema_base_dir: firestore_schema
 
 environments:
   dev:
-    key_path: secrets/gcp-key-dev.json
-    schema_dir: dev
-  staging:
-    key_path: secrets/gcp-key-staging.json
-    schema_dir: staging
+    key_path: secrets/gcp-key-dev.json        # Direct path to key file
+    description: "Development environment"
   prod:
-    key_env: GCP_PROD_KEY
-    schema_dir: prod
+    key_env: GCP_PROD_KEY                     # Env var (JSON content OR file path)
+    description: "Production environment"
 ```
 
 **Fields:**
 - `version` - Config format version (always 1)
 - `schema_base_dir` - Base directory for all schema files
-- `environments` - Map of environment configurations
-  - `key_path` - Path to GCP service account key (relative to config.yaml)
-  - `key_env` - Name of environment variable containing key JSON
-  - `schema_dir` - Schema directory name (relative to schema_base_dir)
+- `environments` - Map of environment configurations (choose ONE per environment):
+  - `key_path` - Direct path to GCP service account key file (relative to config.yaml)
+  - `key_env` - Environment variable name (auto-detects JSON content or file path)
+  - `description` - Optional description of the environment
 
 ## Usage Examples
 
