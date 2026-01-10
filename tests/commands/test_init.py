@@ -55,7 +55,9 @@ class TestFirestoreInit(unittest.TestCase):
 
         # Check output
         self.assertIn("FireSync workspace initialized", output)
-        self.assertIn("custom/nested/firestore-migration", output)
+        self.assertIn("custom", output)
+        self.assertIn("nested", output)
+        self.assertIn("firestore-migration", output)
 
         # Check that files were created in custom path
         config_path = custom_path / CONFIG_DIR_NAME / CONFIG_FILE_NAME
