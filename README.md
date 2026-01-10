@@ -117,8 +117,15 @@ firesync pull --all
 Initialize a new FireSync workspace. Creates `config.yaml` to manage multiple environments.
 
 ```bash
+# Initialize in current directory
 firesync init
+
+# Initialize in custom directory
+firesync init --path ./my-project
 ```
+
+**Options:**
+- `--path PATH` - Target directory for workspace (default: current directory)
 
 Creates:
 - `config.yaml` - Workspace configuration

@@ -42,6 +42,29 @@ class TestFirestoreInit(unittest.TestCase):
         self.assertTrue(schemas_dir.exists())
         self.assertTrue(schemas_dir.is_dir())
 
+    def test_init_with_custom_path(self):
+        """Test workspace initialization with custom path."""
+        from firesync.commands.init import main as init_main
+
+        # Create a subdirectory path
+        custom_path = Path(self.temp_dir) / "custom" / "nested"
+
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            init_main(str(custom_path))
+            output = mock_stdout.getvalue()
+
+        # Check output
+        self.assertIn("FireSync workspace initialized", output)
+        self.assertIn("custom/nested/firestore-migration", output)
+
+        # Check that files were created in custom path
+        config_path = custom_path / CONFIG_DIR_NAME / CONFIG_FILE_NAME
+        self.assertTrue(config_path.exists())
+
+        schemas_dir = custom_path / CONFIG_DIR_NAME / "schemas"
+        self.assertTrue(schemas_dir.exists())
+        self.assertTrue(schemas_dir.is_dir())
+
     def test_init_already_exists(self):
         """Test that init fails if workspace already exists."""
         from firesync.commands.init import main as init_main

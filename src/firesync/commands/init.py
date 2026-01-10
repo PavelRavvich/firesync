@@ -3,6 +3,8 @@
 
 import sys
 import logging
+from typing import Optional
+from pathlib import Path
 
 from firesync.workspace import init_workspace, CONFIG_DIR_NAME
 
@@ -14,10 +16,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(target_path: Optional[str] = None):
     """Main entry point for firesync init command."""
     try:
-        config_path = init_workspace()
+        target_dir = Path(target_path) if target_path else None
+        config_path = init_workspace(target_dir)
         print(f"\n[+] FireSync workspace initialized at: {config_path.parent}")
         print(f"\nNext steps:")
         print(f"1. Edit {config_path} to add your environments")

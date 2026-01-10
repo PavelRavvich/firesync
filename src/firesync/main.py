@@ -8,7 +8,7 @@ from firesync import __version__
 
 
 def create_parser():
-    """Create argument parser with subcommands."""
+    """Create an argument parser with subcommands."""
     parser = argparse.ArgumentParser(
         prog='firesync',
         description='Infrastructure as Code for Google Cloud Firestore'
@@ -23,7 +23,8 @@ def create_parser():
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Init command
-    subparsers.add_parser('init', help='Initialize FireSync workspace')
+    init_parser = subparsers.add_parser('init', help='Initialize FireSync workspace')
+    init_parser.add_argument('--path', help='Target directory for workspace (default: current directory)')
 
     # Env command (with sub-subcommands)
     subparsers.add_parser('env', help='Manage workspace environments')
@@ -70,7 +71,7 @@ def main():
 
     if args.command == 'init':
         from firesync.commands.init import main as init_main
-        init_main()
+        init_main(getattr(args, 'path', None))
 
     elif args.command == 'pull':
         # Reconstruct args for pull command

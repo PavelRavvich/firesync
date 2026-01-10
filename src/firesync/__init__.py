@@ -4,7 +4,7 @@ FireSync - Infrastructure as Code for Firestore
 A Python tool for managing Firestore database schemas as code.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Pavel Ravvich"
 __license__ = "MIT"
 
