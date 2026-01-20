@@ -236,6 +236,36 @@ class TestValidateFieldIndex(unittest.TestCase):
         }
         self.assertFalse(validate_field_index(index))
 
+    def test_valid_raw_gcp_format(self):
+        """Test validation of raw GCP format with name path and indexConfig."""
+        index = {
+            "name": "projects/test/databases/(default)/collectionGroups/articles/fields/description",
+            "indexConfig": {
+                "indexes": [
+                    {"fields": [{"fieldPath": "*", "order": "ASCENDING"}], "queryScope": "COLLECTION"}
+                ]
+            }
+        }
+        self.assertTrue(validate_field_index(index))
+
+    def test_valid_raw_gcp_format_empty_indexes(self):
+        """Test validation of raw GCP format with disabled indexing (empty indexes)."""
+        index = {
+            "name": "projects/test/databases/(default)/collectionGroups/articles/fields/content",
+            "indexConfig": {
+                "indexes": [{"order": "ASCENDING"}]
+            }
+        }
+        self.assertTrue(validate_field_index(index))
+
+    def test_raw_gcp_format_missing_indexes(self):
+        """Test validation fails for raw GCP format without indexes."""
+        index = {
+            "name": "projects/test/databases/(default)/collectionGroups/articles/fields/title",
+            "indexConfig": {}
+        }
+        self.assertFalse(validate_field_index(index))
+
 
 class TestValidateTTLPolicy(unittest.TestCase):
     """Tests for validate_ttl_policy function."""

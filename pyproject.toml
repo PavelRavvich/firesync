@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "firestore-schema-migration"
-version = "0.1.2"
+version = "0.1.3"
 description = "Infrastructure as Code for Google Cloud Firestore"
 readme = "README.md"
 license = {text = "MIT"}

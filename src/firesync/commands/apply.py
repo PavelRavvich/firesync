@@ -7,6 +7,11 @@ from typing import Callable, List, Dict, Any
 
 from firesync.cli import parse_apply_args, setup_client
 from firesync.gcloud import GCloudClient
+from firesync.normalizers import (
+    normalize_collection_name,
+    normalize_field_path,
+    normalize_index_value,
+)
 from firesync.operations import (
     CompositeIndexOperations,
     FieldIndexOperations,
@@ -95,23 +100,43 @@ def apply_schema_from_directory(client: GCloudClient, schema_dir):
         total_count = 0
 
         for entry in local_fields:
-            collection = entry.get("collectionGroupId")
-            field_path = entry.get("fieldPath")
-            idx_configs = entry.get("indexes", [])
+            # Use normalizers to handle both direct fields and GCP resource name paths
+            collection = normalize_collection_name(entry)
+            field_path = normalize_field_path(entry)
+
+            # Get indexes from either direct field or nested indexConfig
+            idx_configs = entry.get("indexes") or entry.get("indexConfig", {}).get("indexes", [])
 
             if not collection or not field_path:
                 print(f"[!] Skipping invalid field index entry: {entry}")
                 continue
 
+            # Skip system default entries (wildcard field on __default__ collection)
+            if collection == "__default__" or field_path == "*":
+                logger.debug(f"Skipping system default field index: {collection}/{field_path}")
+                continue
+
             for cfg in idx_configs:
-                value = cfg.get("order") or cfg.get("arrayConfig")
+                # Handle both flat config and nested fields structure
+                # Flat: {"order": "ASCENDING"} or {"arrayConfig": "CONTAINS"}
+                # Nested: {"fields": [{"fieldPath": "*", "order": "ASCENDING"}]}
+                if "fields" in cfg:
+                    # Nested structure from raw GCP format - extract value from first field
+                    fields_list = cfg.get("fields", [])
+                    if fields_list:
+                        value = normalize_index_value(fields_list[0])
+                    else:
+                        value = None
+                else:
+                    value = normalize_index_value(cfg)
+
                 if not value:
                     continue
 
                 total_count += 1
                 try:
                     cmd = FieldIndexOperations.build_create_command(
-                        collection, field_path, value.lower()
+                        collection, field_path, value
                     )
                     if client.run_command_tolerant(cmd):
                         success_count += 1

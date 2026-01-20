@@ -143,15 +143,30 @@ def validate_field_index(index: Dict[str, Any]) -> bool:
     """
     Validate field index structure.
 
+    Supports both normalized format (collectionGroupId, fieldPath, indexes)
+    and raw GCP format (name path, indexConfig.indexes).
+
     Args:
         index: Field index dictionary
 
     Returns:
         True if valid, False otherwise
     """
-    has_collection = bool(index.get("collectionGroupId"))
-    has_field_path = bool(index.get("fieldPath"))
-    has_indexes = isinstance(index.get("indexes"), list) and len(index.get("indexes", [])) > 0
+    # Check for collection identifier (direct field or in name path)
+    has_collection = bool(
+        index.get("collectionGroupId") or
+        "/collectionGroups/" in index.get("name", "")
+    )
+
+    # Check for field path (direct field or in name path)
+    has_field_path = bool(
+        index.get("fieldPath") or
+        "/fields/" in index.get("name", "")
+    )
+
+    # Check for indexes (direct or nested in indexConfig)
+    indexes = index.get("indexes") or index.get("indexConfig", {}).get("indexes", [])
+    has_indexes = isinstance(indexes, list) and len(indexes) > 0
 
     is_valid = has_collection and has_field_path and has_indexes
 
